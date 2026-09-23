@@ -8,8 +8,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.jaeyun.tally.ui.theme.TallyTheme
 
 /**
  * 앱 루트. 온보딩 + 하단 탭 3개(타이머·기록·설정), 라우트 7종의 NavHost가 들어갈 자리다 (§8.1).
@@ -25,13 +23,5 @@ fun TallyApp() {
         ) {
             Text("Tally")
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun TallyAppPreview() {
-    TallyTheme {
-        TallyApp()
     }
 }
