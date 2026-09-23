@@ -65,3 +65,43 @@ com.jaeyun.tally
 - 모든 시각은 epoch millis(UTC)로 저장하고 표시 시점에 로컬 시간대로 변환한다 (§9).
 - 기준선·판정 결과는 저장하지 않고 조회 시 계산한다. `WeeklyGoal`만 제시 당시 값을 보존한다 (§9).
 - ViewModel 생성은 `viewModelFactory { initializer { ... } }` + `CreationExtras.appContainer`로 한다.
+
+## UI 규칙
+
+- 컴포넌트 기반으로 개발한다. 재사용 가능한 단위는 `ui/components/`로 분리하고, 새로 만들기 전에 기존 컴포넌트를 먼저 찾아 재사용한다.
+- 컴포넌트는 `@Preview`를 만든다. 스크린은 실기기로만 테스트하므로 `@Preview`를 만들지 않는다.
+- 색은 `ui/theme/Color.kt`, 텍스트 스타일은 `ui/theme/Type.kt`에 있는 것만 쓴다. 임의의 `Color(...)`, `TextStyle(...)`, `fontSize`를 코드에 직접 쓰지 않는다.
+- `Color.kt`, `Type.kt`에 항목을 임의로 추가하지 않는다. 필요하면 사용자에게 먼저 묻는다.
+
+## docs/
+
+`docs/`는 읽기 전용이다. 사용자가 수정을 요청할 때만 수정한다.
+
+## Git 규칙
+
+- 커밋은 사용자가 요청할 때만 한다. 실기기 테스트가 OK일 때만 커밋하기 때문이다. 작업이 끝나면 변경 사항을 working tree에 그대로 두고, 커밋하지 않은 상태로 보고한다.
+- `git push` 금지. 사용자가 직접 한다.
+- PR 생성 금지. 사용자가 직접 한다. 단 PR 메시지 작성은 요청하면 해준다 (양식: `.github/pull_request_template.md`, 추가 예정).
+- 브랜치 생성과 `git switch`도 사용자가 하고 공지한다. 먼저 만들지 않는다.
+- 이슈도 사용자가 직접 만든다.
+
+### 커밋 메시지
+
+```
+[커밋태그/#이슈번호] 제목
+
+본문(선택)
+```
+
+이슈 번호가 없는 간단한 수정이면 번호를 생략하고 `[커밋태그] 제목`.
+
+```
+[feat/#12] 제보 사진 업로드 연결
+[chore] 린트 규칙 정리
+```
+
+커밋 태그: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+
+### 브랜치 이름
+
+`커밋태그/#이슈번호-설명` (예: `feat/#12-report-upload`)
