@@ -55,7 +55,7 @@
    - `data/room/`: 엔티티 4종(§9), DAO, `TallyDatabase` v1, 스키마 export
    - `data/datastore/`: `onboardingDone`, `selfReportedDailyMin`, `hiddenSubjects`, `relaxedBaseline`
    - `AppContainer`에 `by lazy`로 등록
-   - 확정된 스키마 결정(§4): `AppSegment.category`에 `AWAY` 추가, `StudySession`에 `hasTimeline: Boolean` 추가, category는 Kotlin enum으로 두고 Room에는 TEXT로 저장. §9 엔티티 4종은 그대로이고 필드·값만 늘어난다
+   - 확정된 스키마 결정(§4): `AppSegment.category`에 `AWAY` 추가, `StudySession`에 `hasTimeline: Boolean` 추가, category는 Kotlin enum으로 두고 Room에는 TEXT로 저장, `StudySession`에 `metricsVersion: Int` 추가. §9 엔티티 4종은 그대로이고 필드·값만 늘어난다
 3. **#3 [docs] §5 지표 확정** — P0 결정과 임계값을 아래 표에 확정값으로 기록한다. 지표 정의는 이후 변경하지 않는다(§9 — 비정규화 저장이라 바꾸면 재계산 마이그레이션이 필요하다).
 
    **확정 지표·임계값 (2026-09-30)**
@@ -68,6 +68,7 @@
    | 짧은 구간 흡수 | 5초 미만. `__SCREEN_ON_UNKNOWN__`만 10초 미만 | §6.2.1, P0 잠금해제 14회 실측 |
    | SCREEN_OFF 단일 구간 확인 다이얼로그 | 60분 초과 | §6.3 #6 초기값 그대로 |
    | 유효 세션 (`isValidForStats`) | 3분 이상 180분 이하 | §6.3 #3·#4, §9 초기값 그대로 |
+   | 지표 규칙 버전 (`MetricsVersion.CURRENT`) | **1** — 이 표의 규칙 전체 | §4 `metricsVersion` 결정 |
    | P0 판정 | **Go** | #1 실측 (삼성 One UI) |
 
    - 60분과 3분/180분은 실측 없이 기획서 초기값을 확정한 것이다. 지표 정의가 아니므로 §14.3 인터뷰 결과로 조정할 수 있다. 60분은 이후 세션의 다이얼로그에만 영향을 준다. 3분/180분을 바꾸면 저장된 `isValidForStats`만 `tTotalSec`로 다시 계산하면 되고, 지표 6개는 그대로다
@@ -177,6 +178,7 @@
 | P0 | `[자리 비웠어요]` 구간 표현 | `AppSegment.category`에 `AWAY` 추가. 구간은 남기고 `T_total`·`T_focus`에서 뺀다 | 구간을 지우면 커버리지 불변식(§6.2)이 깨진다 | ✅ 확정 |
 | P0 | 권한 없는 세션(타이머 전용) 표현 | `StudySession`에 `hasTimeline: Boolean` 추가, 기준선·판정에서 제외 | 권한이 없으면 착석 외 지표를 계산할 수 없다 | ✅ 확정 |
 | P0 | category 저장 형식 | Kotlin enum → Room TEXT | 문자열 오타 방지 | ✅ 확정 |
+| P0 | 지표 규칙 버전 필드 | `StudySession.metricsVersion: Int`. 진행 중은 0, 종료 시 `MetricsVersion.CURRENT`(현재 1)를 저장한다. §5.2 지표 정의·§6.2 복원 규칙·구간 분류 의미가 바뀌면 `CURRENT`를 올리고, 저장 버전이 낮은 세션을 재계산 대상으로 본다 | 기획서 §17.4 "엔티티 설계 시 버전 필드를 미리 둔다". 지표를 비정규화 저장하므로 규칙이 바뀌면 이전 세션과 어긋난다. 자기 사용 개시(P2) 전이라 v1 스키마에 넣는 비용이 없다 | ✅ 확정 |
 | P0 | 잠금 해제 후 홈 체류 처리 | 입력 이벤트에 `KEYGUARD_HIDDEN` 추가. `__SCREEN_ON_UNKNOWN__` 구간에서 잠금이 해제되면 마지막 RESUMED 패키지로 전환한다. 잠금을 풀지 않고 알림만 본 구간은 그대로 `DISTRACT` | 실기기(One UI)에서 런처는 SCREEN_INTERACTIVE보다 15~26ms **먼저** RESUMED된다. 현행 §6.2로는 해제 후 홈 체류가 딴짓이 된다(#1 실측: 해제 0.16초 + 홈 19초 → 이탈 19.3초). 한계: 잠금 화면을 쓰지 않는 기기는 해제 이벤트가 없어 해소되지 않는다 | ✅ 확정 |
 | P0 | 흡수 임계값 | `__SCREEN_ON_UNKNOWN__`만 **10초**, 나머지 구간은 5초 | #1 실측(확정 규칙 기준 잠금해제 14건): 1.4초 이하 9건, 2.7~4.7초 4건(비밀번호 오입력 포함 추정), 16.7초 1건. 5초는 느린 해제와의 여유가 0.3초뿐이라 오탐 1건이 LFS를 반토막 낼 위험이 크다. 대가로 5~10초 알림 확인은 흡수된다(§2.2의 20초 확인은 여전히 잡힘) | ✅ 확정 |
 | P1 | 시간 표기 규칙 | 세션 단위는 한글, 주·누적 총량은 `h m` | 기획서 예시가 두 형식을 섞어 쓴다 | 제안 |
