@@ -6,6 +6,7 @@
 
 | 항목 | 날짜 |
 |---|---|
+| P0 Go/No-Go — **Go** (삼성 One UI 실기기, #1 프로브) | 2026-09-30 |
 | P2 완료 (자기 사용 개시) | — |
 | P7 완료 (기능 동결) | — |
 
@@ -48,12 +49,14 @@
      - 홈 경유 시 런처 패키지 이벤트
      - **잠금해제 소요 10회 실측 → 흡수 임계값 확정**(§6.2.1)
    - No-Go면 minSdk와 알고리즘을 재검토한다
+   - **결과:** 이벤트 3종 정상 수신, 조회 지연 없음, 런처 이벤트 확인. 화면 켜짐 직전에 직전 앱이 RESUMED되는 순서가 발견되어 KEYGUARD_HIDDEN 규칙을 확정했다. 잠금해제 14회 실측으로 흡수 임계값을 확정했다(§4)
+   - 프로브는 기본 비활성. 다시 쓸 때는 `-Ptally.probe=true`로 켠다(CLAUDE.md)
 2. **#2 [feat] Room 스키마 + DataStore**
    - `data/room/`: 엔티티 4종(§9), DAO, `TallyDatabase` v1, 스키마 export
    - `data/datastore/`: `onboardingDone`, `selfReportedDailyMin`, `hiddenSubjects`, `relaxedBaseline`
    - `AppContainer`에 `by lazy`로 등록
    - 확정된 스키마 결정(§4): `AppSegment.category`에 `AWAY` 추가, `StudySession`에 `hasTimeline: Boolean` 추가, category는 Kotlin enum으로 두고 Room에는 TEXT로 저장. §9 엔티티 4종은 그대로이고 필드·값만 늘어난다
-3. **#3 [docs] §5 지표 확정** — P0 결정과 임계값(흡수 5초, SCREEN_OFF 60분, 세션 3분/180분)을 이 문서에 확정값으로 기록한다. 이후 변경하지 않는다(§9).
+3. **#3 [docs] §5 지표 확정** — P0 결정과 임계값(흡수 5초 · `__SCREEN_ON_UNKNOWN__` 10초, SCREEN_OFF 60분, 세션 3분/180분)을 이 문서에 확정값으로 기록한다. 이후 변경하지 않는다(§9).
 
 ### P1 — 세션이 기록된다
 
@@ -77,17 +80,18 @@
 
 1. **#9 [feat] 도메인 모델 + `TimelineReconstructor`**
    - `domain/model`: `RawEvent`, `Segment`, `Category`, `SessionMetrics`
-   - `domain/reconstructor`: §6.2 1~7단계(seed 구간, 구간 생성, 5초 흡수, 분류 태깅, 동일 분류 병합, 불변식 검증)
+   - `domain/reconstructor`: §6.2 1~7단계(seed 구간, 구간 생성, 짧은 구간 흡수(5초, `__SCREEN_ON_UNKNOWN__`만 10초), 분류 태깅, 동일 분류 병합, 불변식 검증)
+   - **KEYGUARD_HIDDEN 규칙(§4 확정):** 입력 이벤트에 `KEYGUARD_HIDDEN`을 더해 4종으로 한다. 루프 내내 마지막 `ACTIVITY_RESUMED` 패키지를 추적하고(초깃값은 본 앱), 현재 구간이 `__SCREEN_ON_UNKNOWN__`일 때 `KEYGUARD_HIDDEN`이 오면 그 패키지로 구간을 전환한다. 그 외 상태에서는 무시한다
    - 분류는 `(packageName) -> Category` 함수로 주입받는다
    - 불변식 위반 시 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
 2. **#10 [feat] `MetricsCalculator`** — `domain/metrics`: 지표 6개(§5.2), 인식 격차 `G`(null 규칙 포함)
 3. **#11 [feat] UsageStats 수집 + 앱 자동 분류** — `data/usagestats`
-   - `UsageEvents` → `RawEvent` 매핑, AppOps 권한 확인
+   - `UsageEvents` → `RawEvent` 매핑(4종: `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN`), AppOps 권한 확인
    - `ApplicationInfo.category` 기반 분류 + 런처·브라우저·전화 앱 판별(§5.1)
    - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW / DIAL 인텐트 추가
 4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션)
 5. **#13 [feat] IDLE 주간 요약 줄** — `이번 주 최장 N분 · 평균 N분 ›`. 이번 주 세션이 없으면 `첫 세션을 시작해보세요`
-- 단위 테스트: §14.2 타임라인 10개 케이스. 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
+- 단위 테스트: §14.2 타임라인 13개 케이스(KEYGUARD_HIDDEN 2건, 화면 켜짐 흡수 10초 1건 포함). 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
 - 실기기: §14.1 시나리오 3종 간이 확인(정식 실험은 평가 기간에). **자기 사용 개시일을 진행 기록에 적는다**
 
 ### P3 — 리포트를 읽을 수 있다
@@ -159,7 +163,8 @@
 | P0 | `[자리 비웠어요]` 구간 표현 | `AppSegment.category`에 `AWAY` 추가. 구간은 남기고 `T_total`·`T_focus`에서 뺀다 | 구간을 지우면 커버리지 불변식(§6.2)이 깨진다 | ✅ 확정 |
 | P0 | 권한 없는 세션(타이머 전용) 표현 | `StudySession`에 `hasTimeline: Boolean` 추가, 기준선·판정에서 제외 | 권한이 없으면 착석 외 지표를 계산할 수 없다 | ✅ 확정 |
 | P0 | category 저장 형식 | Kotlin enum → Room TEXT | 문자열 오타 방지 | ✅ 확정 |
-| P0 | 흡수 임계값 | 실측 후 5초 유지, 부족하면 `__SCREEN_ON_UNKNOWN__`만 10초 | §6.2.1 | 프로브 실측 후 |
+| P0 | 잠금 해제 후 홈 체류 처리 | 입력 이벤트에 `KEYGUARD_HIDDEN` 추가. `__SCREEN_ON_UNKNOWN__` 구간에서 잠금이 해제되면 마지막 RESUMED 패키지로 전환한다. 잠금을 풀지 않고 알림만 본 구간은 그대로 `DISTRACT` | 실기기(One UI)에서 런처는 SCREEN_INTERACTIVE보다 15~26ms **먼저** RESUMED된다. 현행 §6.2로는 해제 후 홈 체류가 딴짓이 된다(#1 실측: 해제 0.16초 + 홈 19초 → 이탈 19.3초). 한계: 잠금 화면을 쓰지 않는 기기는 해제 이벤트가 없어 해소되지 않는다 | ✅ 확정 |
+| P0 | 흡수 임계값 | `__SCREEN_ON_UNKNOWN__`만 **10초**, 나머지 구간은 5초 | #1 실측(확정 규칙 기준 잠금해제 14건): 1.4초 이하 9건, 2.7~4.7초 4건(비밀번호 오입력 포함 추정), 16.7초 1건. 5초는 느린 해제와의 여유가 0.3초뿐이라 오탐 1건이 LFS를 반토막 낼 위험이 크다. 대가로 5~10초 알림 확인은 흡수된다(§2.2의 20초 확인은 여전히 잡힘) | ✅ 확정 |
 | P1 | 시간 표기 규칙 | 세션 단위는 한글, 주·누적 총량은 `h m` | 기획서 예시가 두 형식을 섞어 쓴다 | 제안 |
 | P3 | 재분류 소급 범위 | 리포트 안 재분류 = 그 세션 재조회·재복원, 설정 토글 = 이후 세션부터 | 병합된 세그먼트로는 재계산할 수 없다 | 제안 |
 | P5 | 180분 초과 다이얼로그 선택지 | `[그대로 저장]` / `[통계에서 제외]` | 기획서는 "사용자가 선택"까지만 정했다 | 제안 |
