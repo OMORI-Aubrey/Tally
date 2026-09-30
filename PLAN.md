@@ -56,7 +56,21 @@
    - `data/datastore/`: `onboardingDone`, `selfReportedDailyMin`, `hiddenSubjects`, `relaxedBaseline`
    - `AppContainer`에 `by lazy`로 등록
    - 확정된 스키마 결정(§4): `AppSegment.category`에 `AWAY` 추가, `StudySession`에 `hasTimeline: Boolean` 추가, category는 Kotlin enum으로 두고 Room에는 TEXT로 저장. §9 엔티티 4종은 그대로이고 필드·값만 늘어난다
-3. **#3 [docs] §5 지표 확정** — P0 결정과 임계값(흡수 5초 · `__SCREEN_ON_UNKNOWN__` 10초, SCREEN_OFF 60분, 세션 3분/180분)을 이 문서에 확정값으로 기록한다. 이후 변경하지 않는다(§9).
+3. **#3 [docs] §5 지표 확정** — P0 결정과 임계값을 아래 표에 확정값으로 기록한다. 지표 정의는 이후 변경하지 않는다(§9 — 비정규화 저장이라 바꾸면 재계산 마이그레이션이 필요하다).
+
+   **확정 지표·임계값 (2026-09-30)**
+
+   | 항목 | 확정값 | 근거 |
+   |---|---|---|
+   | 지표 6개 정의 | 기획서 §5.2 그대로. 단 `AWAY` 구간은 `T_total`·`T_focus`에서 제외 | §5.2, §4 자리 비움 결정 |
+   | 구간 분류 | `DISTRACT` / `ALLOWED` / `SCREEN_OFF` / `AWAY` (Kotlin enum → Room TEXT) | §5.1, §4 |
+   | 입력 이벤트 | `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN` | §6.1, P0 실측 |
+   | 짧은 구간 흡수 | 5초 미만. `__SCREEN_ON_UNKNOWN__`만 10초 미만 | §6.2.1, P0 잠금해제 14회 실측 |
+   | SCREEN_OFF 단일 구간 확인 다이얼로그 | 60분 초과 | §6.3 #6 초기값 그대로 |
+   | 유효 세션 (`isValidForStats`) | 3분 이상 180분 이하 | §6.3 #3·#4, §9 초기값 그대로 |
+   | P0 판정 | **Go** | #1 실측 (삼성 One UI) |
+
+   - 60분과 3분/180분은 실측 없이 기획서 초기값을 확정한 것이다. 지표 정의가 아니므로 §14.3 인터뷰 결과로 조정할 수 있다. 60분은 이후 세션의 다이얼로그에만 영향을 준다. 3분/180분을 바꾸면 저장된 `isValidForStats`만 `tTotalSec`로 다시 계산하면 되고, 지표 6개는 그대로다
 
 ### P1 — 세션이 기록된다
 
