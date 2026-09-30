@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- debug 빌드 전용. P0 사용 기록 프로브 (#1). 릴리스 매니페스트에는 병합되지 않는다 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 이벤트 덤프에서 런처 패키지를 표시하기 위한 가시성 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+    </queries>
+
+    <application>
+        <!--
+            본 앱과 별도 태스크로 열리도록 taskAffinity를 분리한다.
+            기본은 비활성(런처 아이콘 없음). gradle 속성 tally.probe=true로 켠다 (app/build.gradle.kts)
+        -->
+        <activity
+            android:name=".probe.UsageProbeActivity"
+            android:enabled="${probeEnabled}"
+            android:exported="true"
+            android:label="@string/probe_app_name"
+            android:taskAffinity="com.jaeyun.tally.probe">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
