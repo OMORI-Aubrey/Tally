@@ -83,7 +83,7 @@ com.jaeyun.tally
 
 - 커밋은 사용자가 요청할 때만 한다. 실기기 테스트가 OK일 때만 커밋하기 때문이다. 작업이 끝나면 변경 사항을 working tree에 그대로 두고, 커밋하지 않은 상태로 보고한다.
 - `git push` 금지. 사용자가 직접 한다.
-- PR 생성 금지. 사용자가 직접 한다. 단 PR 메시지 작성은 요청하면 해준다 (양식: `.github/pull_request_template.md`, 추가 예정).
+- PR 생성 금지. 사용자가 직접 한다. 단 PR 메시지 작성은 요청하면 해준다 (양식: `.github/pull_request_template.md`).
 - 브랜치 생성과 `git switch`도 사용자가 하고 공지한다. 먼저 만들지 않는다.
 - 이슈도 사용자가 직접 만든다.
 
