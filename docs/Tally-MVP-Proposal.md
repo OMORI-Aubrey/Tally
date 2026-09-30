@@ -1114,9 +1114,13 @@ Row(modifier = Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(8.d
 
 ## 9. 데이터 모델
 
-Room 엔티티 4종. 모든 시각은 epoch millis(UTC)로 저장하고 표시 시점에 로컬 시간대로 변환한다.
+Room 엔티티 4종. 모든 시각은 epoch millis(UTC)로 저장하고 표시 시점에 로컬 시간대로 변환한다. 분류·출처·목표 지표는 Kotlin enum으로 두고 Room에는 이름(TEXT)으로 저장한다.
 
 ```kotlin
+enum class Category { DISTRACT, ALLOWED, SCREEN_OFF, AWAY }      // §5.1, AWAY = 자리 비움(§6.3 #6)
+enum class ClassificationSource { AUTO_CATEGORY, USER }
+enum class GoalMetric { LFS, INTERRUPTION, FOCUS_TOTAL }
+
 @Entity
 data class StudySession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1133,17 +1137,22 @@ data class StudySession(
     val lfsSec: Int,
     val densityPct: Float,
     val interruptionCount: Int,
+    val metricsVersion: Int,       // 위 지표를 계산한 규칙 버전. 진행 중은 0
 
     val isValidForStats: Boolean,  // 3분 미만·180분 초과 세션은 false
+    val hasTimeline: Boolean,      // false = 권한 없이 타이머만 동작. 착석 외 지표 없음
     val createdAt: Long
 )
 
-@Entity(indices = [Index("sessionId")])
+@Entity(
+    indices = [Index("sessionId")],
+    foreignKeys = [ForeignKey(StudySession::class, ["id"], ["sessionId"], onDelete = CASCADE)]
+)
 data class AppSegment(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val sessionId: Long,
-    val packageName: String,       // "__SCREEN_OFF__" 의사 패키지 포함
-    val category: String,          // DISTRACT / ALLOWED / SCREEN_OFF
+    val packageName: String,       // "__SCREEN_OFF__", "__SCREEN_ON_UNKNOWN__" 의사 패키지 포함
+    val category: Category,        // DISTRACT / ALLOWED / SCREEN_OFF / AWAY
     val startAt: Long,
     val endAt: Long
 )
@@ -1152,14 +1161,14 @@ data class AppSegment(
 data class AppClassification(
     @PrimaryKey val packageName: String,
     val appLabel: String,
-    val category: String,
-    val source: String             // AUTO_CATEGORY / USER
+    val category: Category,        // DISTRACT / ALLOWED만 쓴다
+    val source: ClassificationSource
 )
 
 @Entity
 data class WeeklyGoal(
-    @PrimaryKey val weekStartAt: Long,
-    val metric: String,            // LFS / INTERRUPTION / FOCUS_TOTAL
+    @PrimaryKey val weekStartAt: Long,  // 월요일 00:00(로컬 시간대)
+    val metric: GoalMetric,
     val targetValue: Float,        // 분 또는 회. 세션당 이탈은 소수(3.4회)이므로 Int 불가
     val baselineValue: Float,      // 제시 당시의 기준값 (근거 보존)
     val achievedValue: Float?,     // 주 종료 후 채움
@@ -1183,7 +1192,12 @@ hiddenSubjects: Set<String>      // 칩 목록에서 제외. 세션 데이터는
 
 칩 조회는 `SELECT DISTINCT subject ... ORDER BY startAt DESC LIMIT 5`에 `hiddenSubjects` 제외 조건을 붙인다. 시트의 전체 목록은 숨김 항목까지 표시해 되돌릴 수 있게 한다.
 * **`AppSegment`에 인덱스를 둔다.** 세션당 수십 건 생성되며 세션별 조회가 주 패턴이다.
+* **`AppSegment`는 세션을 지우면 함께 지워진다(외래키 `CASCADE`).** 미완료 세션 `[삭제]`(§6.3 5번)와 데이터 전체 삭제(§11)에서 구간이 고아로 남지 않는다.
+* **분류를 enum으로 둔다.** 문자열 오타로 알 수 없는 분류가 저장되는 것을 막는다. Room에 이름으로 저장되므로 상수 이름은 바꾸지 않는다.
+* **`AWAY` 분류를 둔다.** §6.3 6번 `[자리 비웠어요]` 구간을 지우지 않고 남겨야 §6.2 커버리지 불변식이 유지된다. `T_total`·`T_focus`에서 제외한다.
+* **`hasTimeline`을 둔다.** 권한 미허용 세션(§6.3 1번)은 착석 외 지표를 계산할 수 없으므로, 이 플래그로 기준선·판정(§5.3·§7)에서 제외한다.
 * **지표를 `StudySession`에 비정규화 저장한다.** 주간·누적·기준선 집계 시 매번 세그먼트를 재순회하지 않기 위한 선택이다. **지표 정의가 변경되면 재계산 마이그레이션이 필요하므로 §5를 사전에 확정해야 한다.**
+* **`metricsVersion`을 둔다.** 비정규화 저장의 대가로, 지표 정의(§5.2)·복원 규칙(§6.2)·분류 의미가 바뀌면 이전 세션의 값이 새 규칙과 어긋난다. 규칙이 바뀔 때 버전을 올리고, 저장 버전이 낮은 세션을 재계산 대상으로 가려낸다. §17.4 로컬 백업의 "버전 필드를 미리 둔다"도 이 필드로 충족한다.
 * **개인 기준선과 판정 결과는 저장하지 않는다.** 조회 시 계산한다. 기준선은 이동값이므로 시점마다 달라지는 것이 정상이다.
 
 ---
@@ -1822,7 +1836,7 @@ LLM 응답 → 정규식으로 숫자 추출 → 입력 JSON 값 집합과 대�
 | CSV 내보내기 (정식 기능) | 설정 화면에서 사용자가 자기 데이터를 내보냄 | 데이터 소유권 관점에서 가치가 있으나 MVP 성공 조건과 무관. **개발용 내보내기는 MVP에 포함**(§14.4) |
 | 캘린더 뷰 | 월간 격자에 일별 순공시간 표시 | 목록 화면으로 동일 접근 가능 |
 | 목표 직접 선택 | 앱이 제안한 목표 대신 사용자가 대상 지표를 고름 | §7.3의 자동 선택 규칙이 부적합한지 먼저 확인해야 한다 |
-| **로컬 백업·복원** (확장 항목 중 최우선) | 암호화된 파일로 내보내기·가져오기. 서버를 두지 않으므로 §11 원칙 유지 | 학기 기간 내 발생하지 않으므로 MVP에서 제외한다. 다만 **기기를 교체하면 4주 기준선이 전부 소실되는 구조**이므로, 이는 편의 기능이 아니라 리텐션 문제다. MVP 이후 가장 먼저 착수한다. 나중에 붙이면 스키마 마이그레이션 비용이 발생하므로 §9 엔티티 설계 시 버전 필드를 미리 둔다 |
+| **로컬 백업·복원** (확장 항목 중 최우선) | 암호화된 파일로 내보내기·가져오기. 서버를 두지 않으므로 §11 원칙 유지 | 학기 기간 내 발생하지 않으므로 MVP에서 제외한다. 다만 **기기를 교체하면 4주 기준선이 전부 소실되는 구조**이므로, 이는 편의 기능이 아니라 리텐션 문제다. MVP 이후 가장 먼저 착수한다. 나중에 붙이면 스키마 마이그레이션 비용이 발생하므로 §9 엔티티 설계 시 버전 필드를 미리 둔다(`StudySession.metricsVersion`) |
 | 클라우드 동기화 | 다기기 데이터 통합 | §11 로컬 전용 원칙과 충돌 |
 
 ### 17.5 검증 확장
