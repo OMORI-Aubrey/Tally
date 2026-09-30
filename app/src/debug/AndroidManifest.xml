@@ -11,9 +11,13 @@
     </queries>
 
     <application>
-        <!-- 본 앱과 별도 태스크로 열리도록 taskAffinity를 분리한다 -->
+        <!--
+            본 앱과 별도 태스크로 열리도록 taskAffinity를 분리한다.
+            기본은 비활성(런처 아이콘 없음). gradle 속성 tally.probe=true로 켠다 (app/build.gradle.kts)
+        -->
         <activity
             android:name=".probe.UsageProbeActivity"
+            android:enabled="${probeEnabled}"
             android:exported="true"
             android:label="@string/probe_app_name"
             android:taskAffinity="com.jaeyun.tally.probe">

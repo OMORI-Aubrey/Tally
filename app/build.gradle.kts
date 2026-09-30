@@ -24,6 +24,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 사용 기록 프로브(#1, app/src/debug)는 기본 비활성. 필요할 때만 -Ptally.probe=true 또는
+            // ~/.gradle/gradle.properties에 tally.probe=true를 두고 빌드한다
+            manifestPlaceholders["probeEnabled"] = providers.gradleProperty("tally.probe").getOrElse("false")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
