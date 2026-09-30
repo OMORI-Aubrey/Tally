@@ -2,6 +2,8 @@
 
 공부 세션 중 스마트폰 사용 기록을 복원해 순공 구조를 보여주는 Android 앱. 기획의 단일 출처는 `docs/Tally-MVP-Proposal.md`이며, 화면 배치는 `docs/Tally-wireframe.md`를 따른다. 본문에서 `§n`은 기획서 절 번호다.
 
+진행 계획(단계별 작업, 착수 전 확정할 결정)은 `PLAN.md`를 따른다.
+
 ## 빌드
 
 ```bash

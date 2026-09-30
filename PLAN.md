@@ -1,0 +1,172 @@
+# Tally MVP 개발 계획
+
+기획서 §13(`docs/Tally-MVP-Proposal.md`)의 단계 순서 P0~P7을 이슈 단위 작업, 대상 패키지, 완료 기준, 착수 전 확정할 결정으로 풀어낸 문서다. §13 원칙에 따라 **일정(주차)과 작업량 추정은 두지 않는다.** `§n`은 기획서 절 번호다.
+
+## 진행 기록
+
+| 항목 | 날짜 |
+|---|---|
+| P2 완료 (자기 사용 개시) | — |
+| P7 완료 (기능 동결) | — |
+
+## 1. 진행 원칙
+
+- **작업 흐름 — 이슈 1개 = 브랜치 1개**
+  1. 사용자가 이슈·브랜치(`feat/#N-설명`)를 만들고 공지한다
+  2. Claude가 구현하고 단위 테스트를 작성한다. `testDebugUnitTest`, `assembleDebug`, `lintDebug` 통과를 확인한다
+  3. 커밋하지 않고 보고하며 실기기 체크리스트를 전달한다
+  4. 사용자가 실기기에서 확인한 뒤 커밋을 요청하면 `[feat/#N] 제목`으로 커밋한다
+- **임계 경로는 P2다.** P2 완료가 곧 자기 사용 개시이고, 판정이 처음 뜨기까지 그로부터 5주가 걸린다(§13.3 ①). P0~P2는 최소 범위로 빠르게 끝낸다. P2 완료일을 위 진행 기록에 적는다.
+- **P5가 안전선이다.** 여기서 멈춰도 프로젝트가 성립한다.
+- **P7 종료 시 기능을 동결한다.** 이후에는 버그 수정만 하고, 개선점은 §17에 기록만 한다.
+- **조정 밸브:** ① P7 누적 섹션을 §17로 이월 ② P4 앱 분류 화면을 최소 형태로 유지.
+- 모든 화면은 와이어프레임 §10 디자인 체크리스트로 검사한다. `@Preview`는 컴포넌트에만 만들고, 스크린은 실기기로 확인한다.
+
+## 2. 공통 기반
+
+해당 단계에서 처음 필요해질 때 만든다.
+
+| 항목 | 위치 | 내용 |
+|---|---|---|
+| 주 범위 | `util/` | **월요일 00:00(로컬 시간대) 시작** 주의 `[start, end)` epoch millis. 현재 시각은 인자로 받는다 |
+| 시간 표기 | `util/` | 기획서 표기가 섞여 있다(`1시간 28분` / `21h 24m`). 제안: 세션 단위는 한글, 주·누적 총량은 `h m`. P1에서 확정 |
+| UI 문구 | `res/values/strings.xml` | 문구는 전부 리소스로 둔다. 인과 서술 금지(§5.5), 톤 규칙(§5.6), 0 표시 금지(§8.5.1)를 지킨다 |
+| 디자인 토큰 | `ui/theme/Color.kt`, `Type.kt` | 색 역할 4종(와이어프레임 §0) + L1~L3 타이포. **P1 전에 Claude가 초안 제안 → 사용자 승인 후 추가** |
+
+## 3. 단계별 작업
+
+### P0 — ⛔ Go/No-Go 게이트
+
+1. **[chore] 사용 기록 프로브**
+   - `app/src/debug/`에만 두는 진단 Activity. 릴리스 빌드에 들어가지 않고, 라우트 7종에도 포함되지 않는다
+   - 권한 상태 확인, 사용 기록 접근 설정 열기, 최근 N분 `queryEvents` 원본 덤프
+   - 실기기 확인
+     - `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE` 수신 여부
+     - 종료 직후 조회 시 마지막 이벤트 누락 여부
+     - 홈 경유 시 런처 패키지 이벤트
+     - **잠금해제 소요 10회 실측 → 흡수 임계값 확정**(§6.2.1)
+   - No-Go면 minSdk와 알고리즘을 재검토한다
+2. **[feat] Room 스키마 + DataStore**
+   - `data/room/`: 엔티티 4종(§9), DAO, `TallyDatabase` v1, 스키마 export
+   - `data/datastore/`: `onboardingDone`, `selfReportedDailyMin`, `hiddenSubjects`, `relaxedBaseline`
+   - `AppContainer`에 `by lazy`로 등록
+   - 확정된 스키마 결정(§4): `AppSegment.category`에 `AWAY` 추가, `StudySession`에 `hasTimeline: Boolean` 추가. §9 엔티티 4종은 그대로이고 필드·값만 늘어난다
+   - 남은 결정: category 저장 형식(§4)
+3. **§5 지표 확정** — P0 결정과 임계값(흡수 5초, SCREEN_OFF 60분, 세션 3분/180분)을 이 문서에 확정값으로 기록한다. 이후 변경하지 않는다(§9).
+
+### P1 — 세션이 기록된다
+
+0. 디자인 토큰 초안 → 승인 → `Color.kt`/`Type.kt` 반영
+1. **[feat] 네비게이션 골격**
+   - 라우트 7종 `@Serializable` 정의: `onboarding`, `timer`, `records`, `settings`, `settings/app_class`, `perceived_input`, `session_report`
+   - `ui/TallyApp.kt`에 하단 탭 3개(타이머·기록·설정) `NavHost`. 아직 없는 화면은 빈 자리로 둔다
+2. **[feat] 타이머 IDLE/RUNNING**
+   - 시작 즉시 `startAt`을 Room에 저장한다(§6.3 #5). 경과 시간 = now − startAt, 서비스를 두지 않는다
+   - 앱을 다시 열었을 때 진행 중 세션이 있으면 RUNNING을 복원한다
+   - 종료 시 `endAt`, `tTotalSec`, `isValidForStats`(3~180분)를 저장한다
+   - RUNNING 화면은 경과 시간·과목·종료 버튼만(§8.5)
+3. **[feat] 과목 칩 + 과목 선택 시트**(§8.1.1)
+   - 칩: 최근 5개(`SELECT DISTINCT`, 숨김 제외), 마지막 과목 자동 선택
+   - 시트: 전체 목록 + 세션 수, 이름 바꾸기(과거 세션까지 소급, 영향 범위 안내), 칩에서 숨기기. 삭제는 없다
+4. **[feat] 기록 탭 세션 목록(텍스트)** — 날짜별 그룹. 과목이 없으면 자리를 생략한다
+- 컴포넌트: `SubjectChipRow`, `SessionListItem`
+- 단위 테스트: 주 범위(월요일 경계, 자정), 시간 표기
+
+### P2 — 🔴 M1: 지표가 계산된다 → 자기 사용 개시
+
+1. **[feat] 도메인 모델 + `TimelineReconstructor`**
+   - `domain/model`: `RawEvent`, `Segment`, `Category`, `SessionMetrics`
+   - `domain/reconstructor`: §6.2 1~7단계(seed 구간, 구간 생성, 5초 흡수, 분류 태깅, 동일 분류 병합, 불변식 검증)
+   - 분류는 `(packageName) -> Category` 함수로 주입받는다
+   - 불변식 위반 시 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
+2. **[feat] `MetricsCalculator`** — `domain/metrics`: 지표 6개(§5.2), 인식 격차 `G`(null 규칙 포함)
+3. **[feat] UsageStats 수집 + 앱 자동 분류** — `data/usagestats`
+   - `UsageEvents` → `RawEvent` 매핑, AppOps 권한 확인
+   - `ApplicationInfo.category` 기반 분류 + 런처·브라우저·전화 앱 판별(§5.1)
+   - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW / DIAL 인텐트 추가
+4. **[feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션)
+5. **[feat] IDLE 주간 요약 줄** — `이번 주 최장 N분 · 평균 N분 ›`. 이번 주 세션이 없으면 `첫 세션을 시작해보세요`
+- 단위 테스트: §14.2 타임라인 10개 케이스. 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
+- 실기기: §14.1 시나리오 3종 간이 확인(정식 실험은 평가 기간에). **자기 사용 개시일을 진행 기록에 적는다**
+
+### P3 — 리포트를 읽을 수 있다
+
+1. **[feat] 체감 입력** — `perceived_input` 라우트. 트리거 규칙(§3.4)은 ViewModel 내부 함수로 두고 `Random`을 주입한다. 도메인 순수 함수 6종에 속하지 않으므로 `domain/`에 두지 않는다
+2. **[feat] 세션 리포트(스트립 제외)** — §8.2의 0·1·3~7번
+   - 격차 헤드라인(체감 입력이 있을 때만)
+   - 구조 헤드라인: 최장 구간, `N_int + 1`조각, 세션 길이 대비 최장 구간 비율, 기록
+   - 총량: 순공 **최대** · 착석 · 딴짓
+   - 지표 카드, 이탈 목록(`__SCREEN_ON_UNKNOWN__`은 `화면 켜짐 (앱 없음)`으로 표기)
+   - 미분류 앱 인라인 질문(세션당 최대 2개), 세션 메타
+3. **[feat] 이탈 목록에서 길게 눌러 재분류**(§5.1) — 착수 전 확정: §4의 P3 결정
+- 컴포넌트: `StructureHeadline`, `TotalsRow`, `MetricCard`, `DistractionListItem`, `UnclassifiedAppPrompt`
+- 단위 테스트: 체감 트리거(3번째 세션 확정 규칙), `G`의 부호와 null 처리
+
+### P4 — ✅ M2: 계측 완성
+
+1. **[feat] `TimelineStrip` 컴포넌트** — `Row` + `weight`, 높이 40dp, 색은 토큰만 사용(§8.3). 리포트 2번 자리에 배치
+2. **[feat] 앱 분류 화면** — `settings/app_class`: 감지된 앱만 표시, 토글하면 `source = USER`, 브라우저 안내 문구. 설정 탭에는 진입 행만 최소로 둔다
+- 실기기: 스트립 구간 합이 세션 전체를 덮는지(와이어프레임 §10)
+
+### P5 — ✅ 안전선
+
+1. **[feat] 온보딩 1화면**(§8.7)
+   - 가치 설명 + 세션 경계 안내 + 수집·비수집 항목 고지
+   - 자기보고 슬라이더(건너뛰기 가능)
+   - 권한 단계 안내 + `[권한 설정하기]` / `[나중에 하기]`. `onResume`에서 권한 재확인
+   - 최초 1회만 시작 화면이 된다
+2. **[feat] 권한 미허용 열화 모드**(§6.3 #1) — 리포트에서 스트립 대신 권한 유도 배너, 지표 카드와 이탈 목록 숨김
+3. **[feat] 다이얼로그 3종**(와이어프레임 §8)
+   - ① SCREEN_OFF 단일 구간 60분 초과: `[공부했어요]` / `[자리 비웠어요]`
+   - ② 세션 180분 초과 — 착수 전 확정: §4의 P5 결정
+   - ③ 미완료 세션 복구: `[이어서 기록]` / `[삭제]`
+4. **[feat] 빈 상태 전체**(§8.5.1 표)
+5. **[feat] 설정 화면**
+   - 앱 분류, 권한 상태, 데이터 전체 삭제(Room + DataStore 초기화, 확인 절차)
+   - 개발자 영역(`BuildConfig.DEBUG`에서만 노출): CSV 내보내기(FileProvider + 시스템 공유), 데모 데이터 주입(5주 합성 세션), 기준선 완화 토글
+   - 필요한 설정: `buildFeatures.buildConfig = true`, 매니페스트 FileProvider
+- 컴포넌트: `EmptyState`, `PermissionBanner`, `TallyDialog`, `SettingsRow`
+- 실기기: 권한 허용 흐름(§14.1.1 기록 항목), 강제 종료·재부팅 후 복구
+
+### P6 — 🔵 M3: 판정과 목표가 나온다
+
+1. **[feat] `BaselineCalculator`** — `domain/baseline`
+   - 이번 주를 제외한 직전 4주. 집중 밀도는 기간 합산, 세션당 이탈, 평균 LFS, 주간 순공 총량 / 4
+   - 평균 세션 길이도 산출한다(§7.3 세션 길이 가드용, 화면에는 표시하지 않음)
+   - 활성 조건 12세션. 완화 플래그가 켜진 debug 빌드는 6세션
+2. **[feat] `VerdictResolver`** — `domain/verdict`: 5구간 판정 + 총량 가드 단방향 클램프(0.7) + 클램프 전용 문구 여부
+3. **[feat] `GoalSuggester`** — `domain/goal`: 1~4순위, 세션 길이 가드(±20%), 최고 기록은 목표 대상에서 제외
+4. **[feat] `WeeklyGoal` 생성·달성 판정** — 착수 전 확정: §4의 P6 결정
+5. **[feat] 기록 탭 판정 섹션 + 이번 주 섹션**(§8.4 (1)(2), 요약 문단 제외)
+   - 주 선택, 1주차 격차(첫 주만), 최장 구간, 이탈 횟수, 순공/착석, 딴짓, 집중 밀도(전주 데이터가 없으면 숨김)
+   - 세션 요약, 일별 막대, 공부 중 켠 앱 상위 5개, 세션 목록
+- 컴포넌트: `VerdictCard`, `GoalCard`, `AchievementBadge`, `WeekSelector`, `DailyBarChart`, `TopAppsList`, `ComparisonStat`
+- 단위 테스트: §14.2 판정·목표 14개 케이스 + 경계값(±3%, ±10%, 0.7, ±20%)
+
+### P7 — 🛑 기능 동결
+
+1. **[feat] 누적 섹션**(§8.4 (3)) — 유효 세션 15개 이상에서 활성. 이번 달/전체 순공, 최고·최저 집중 시간대(구간당 5세션 미만이면 숨김, 표본 수 표시), 최장 구간 기록, 인식 격차 추이
+2. **[feat] `TemplateReportGenerator`** — `domain/report`: `ReportGenerator` 인터페이스(§7.5) + 요약 문단(§7.4)
+3. 기능 동결 선언 → 사용성 평가 4주 + 결론·발표 1주(§13.1)
+
+## 4. 착수 전 확정할 결정
+
+기획서에 정해져 있지 않아 해당 단계를 시작하기 전에 사용자가 확정한다. 확정되면 상태를 `✅ 확정`으로 바꾸고, 제안과 다르게 정해졌으면 내용을 고친다.
+
+| 단계 | 결정 | 내용 | 이유 | 상태 |
+|---|---|---|---|---|
+| P0 | `[자리 비웠어요]` 구간 표현 | `AppSegment.category`에 `AWAY` 추가. 구간은 남기고 `T_total`·`T_focus`에서 뺀다 | 구간을 지우면 커버리지 불변식(§6.2)이 깨진다 | ✅ 확정 |
+| P0 | 권한 없는 세션(타이머 전용) 표현 | `StudySession`에 `hasTimeline: Boolean` 추가, 기준선·판정에서 제외 | 권한이 없으면 착석 외 지표를 계산할 수 없다 | ✅ 확정 |
+| P0 | category 저장 형식 | Kotlin enum → Room TEXT | 문자열 오타 방지 | 제안 |
+| P0 | 흡수 임계값 | 실측 후 5초 유지, 부족하면 `__SCREEN_ON_UNKNOWN__`만 10초 | §6.2.1 | 프로브 실측 후 |
+| P1 | 시간 표기 규칙 | 세션 단위는 한글, 주·누적 총량은 `h m` | 기획서 예시가 두 형식을 섞어 쓴다 | 제안 |
+| P3 | 재분류 소급 범위 | 리포트 안 재분류 = 그 세션 재조회·재복원, 설정 토글 = 이후 세션부터 | 병합된 세그먼트로는 재계산할 수 없다 | 제안 |
+| P5 | 180분 초과 다이얼로그 선택지 | `[그대로 저장]` / `[통계에서 제외]` | 기획서는 "사용자가 선택"까지만 정했다 | 제안 |
+| P6 | `WeeklyGoal` 생성 시점 | 기록 탭 진입 시 이번 주 목표가 없으면 생성하고, 지난주 목표의 달성 여부를 채운다 | 서버·백그라운드 작업 없이 주 경계를 처리한다 | 제안 |
+
+## 5. 검증
+
+- 모든 작업: `./gradlew testDebugUnitTest assembleDebug lintDebug` 통과 → 사용자 실기기 확인 → 커밋
+- 도메인 로직(P2, P6): §14.2 테스트 케이스가 곧 완료 기준이다
+- 화면: 와이어프레임 §10 체크리스트
+- `UsageStatsManager` 관련 기능은 에뮬레이터로 검증하지 않는다(§6.4)
