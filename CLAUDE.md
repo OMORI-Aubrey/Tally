@@ -87,6 +87,7 @@ com.jaeyun.tally
 - PR 생성 금지. 사용자가 직접 한다. 단 PR 메시지 작성은 요청하면 해준다 (양식: `.github/pull_request_template.md`).
 - 브랜치 생성과 `git switch`도 사용자가 하고 공지한다. 먼저 만들지 않는다.
 - 이슈는 사용자가 요청하면 Claude가 `gh`로 만든다. `.github/ISSUE_TEMPLATE/` 양식을 따르고, 종류 라벨(`enhancement` / `bug` / `chore` / `documentation`)과 단계 라벨(`P0`~`P7`)을 붙인다. 셸 PATH에 `gh`가 없으면 `C:\Program Files\GitHub CLI\gh.exe`를 쓴다.
+- 작업 중인 이슈의 체크박스는 Claude가 `gh issue edit`로 직접 체크한다. 구현하고 빌드·테스트로 확인한 항목은 바로 체크하고, 실기기 확인이 필요한 항목은 사용자가 OK를 알린 뒤에 체크한다. 진행 중에 결정이 바뀌면 해당 항목 문구도 고친다.
 
 ### 커밋 메시지
 
