@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- XML은 Compose 색을 참조할 수 없어 창 배경용으로만 둔다. ui/theme/Color.kt의 Paper와 같은 값 -->
+    <color name="paper">#FDFBF4</color>
+</resources>

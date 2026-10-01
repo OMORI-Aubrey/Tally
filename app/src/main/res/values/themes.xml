@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 실제 테마는 Compose(ui/theme)에서 정의한다. 여기서는 윈도우 기본값만 둔다. -->
-    <style name="Theme.Tally" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Tally" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- 앱을 켤 때 흰 화면이 번쩍이지 않게 종이 색을 깐다 -->
+        <item name="android:windowBackground">@color/paper</item>
+        <!-- 라이트 전용 테마. 시스템이 강제로 어둡게 바꾸지 않게 한다 -->
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
 </resources>
