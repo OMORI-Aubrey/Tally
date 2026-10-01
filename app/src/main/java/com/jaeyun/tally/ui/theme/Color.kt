@@ -25,6 +25,7 @@ val Highlighter = Color(0xFFFFE27A)      // 선택한 과목, 활성 탭
 val HighlighterSoft = Color(0xFFFEECAB)  // 시작 버튼 칠, 순공 강조
 val TapeBlue = Color(0xFFBFDDEF)         // 과목 테이프, 포스트잇 테이프, 탭
 val TapePink = Color(0xFFF5C9C9)         // 과목 테이프, 탭
+val TapeMint = Color(0xFFCDE8C4)         // 과목 테이프, 탭
 
 // 구간 — 타임라인 스트립과 이탈 목록이 같은 규칙을 쓴다 (와이어프레임 §0)
 val SegmentScreenOff = Color(0xFFFEF0BD) // SCREEN_OFF. 가장 연함

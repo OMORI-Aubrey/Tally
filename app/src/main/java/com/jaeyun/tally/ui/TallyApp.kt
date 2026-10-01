@@ -1,27 +1,153 @@
 package com.jaeyun.tally.ui
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
+import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.IndexTab
+import com.jaeyun.tally.ui.components.IndexTabBar
+import com.jaeyun.tally.ui.screens.PlaceholderAction
+import com.jaeyun.tally.ui.screens.PlaceholderScreen
+import com.jaeyun.tally.ui.theme.TapeBlue
+import com.jaeyun.tally.ui.theme.TapeMint
+import com.jaeyun.tally.ui.theme.TapePink
 
 /**
- * 앱 루트. 온보딩 + 하단 탭 3개(타이머·기록·설정), 라우트 7종의 NavHost가 들어갈 자리다 (§8.1).
+ * 앱 루트. 하단 탭 3개(타이머·기록·설정)와 라우트 7종의 NavHost (§8.1, 와이어프레임 §9).
+ *
+ * 하단 탭은 탭 목적지에서만 보인다. 앱 분류·체감 입력·세션 리포트·온보딩은 탭 없이 전체 화면으로 연다.
  */
 @Composable
 fun TallyApp() {
-    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Tally")
+    val navController = rememberNavController()
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val selectedTab = TopLevelTab.entries.firstOrNull { tab ->
+        backStackEntry?.destination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
+    }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            if (selectedTab != null) {
+                IndexTabBar(
+                    tabs = TopLevelTab.entries.map { IndexTab(stringResource(it.label), it.color) },
+                    selectedIndex = selectedTab.ordinal,
+                    onSelect = { navController.navigateToTab(TopLevelTab.entries[it]) },
+                )
+            }
+        },
+    ) { innerPadding ->
+        TallyNavHost(navController, Modifier.padding(innerPadding))
+    }
+}
+
+/** 선택되지 않은 탭 색. 실제 색인 탭처럼 탭마다 고정한다 */
+private val TopLevelTab.color
+    get() = when (this) {
+        TopLevelTab.TIMER -> TapeBlue
+        TopLevelTab.RECORDS -> TapePink
+        TopLevelTab.SETTINGS -> TapeMint
+    }
+
+// TODO(#6~) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
+private const val PLACEHOLDER_SESSION_ID = 1L
+
+@Composable
+private fun TallyNavHost(navController: NavHostController, modifier: Modifier) {
+    NavHost(navController = navController, startDestination = Timer, modifier = modifier) {
+        composable<Onboarding> {
+            PlaceholderScreen(
+                title = stringResource(R.string.title_onboarding),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_finish_onboarding)) { navController.finishOnboarding() },
+                ),
+            )
+        }
+        composable<Timer> {
+            PlaceholderScreen(
+                title = stringResource(R.string.tab_timer),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_end_with_perceived)) {
+                        navController.navigate(PerceivedInput(PLACEHOLDER_SESSION_ID))
+                    },
+                    PlaceholderAction(stringResource(R.string.placeholder_end_to_report)) {
+                        navController.navigate(SessionReport(PLACEHOLDER_SESSION_ID))
+                    },
+                    PlaceholderAction(stringResource(R.string.placeholder_open_onboarding)) { navController.navigate(Onboarding) },
+                ),
+            )
+        }
+        composable<Records> {
+            PlaceholderScreen(
+                title = stringResource(R.string.tab_records),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_open_report)) {
+                        navController.navigate(SessionReport(PLACEHOLDER_SESSION_ID))
+                    },
+                ),
+            )
+        }
+        composable<Settings> {
+            PlaceholderScreen(
+                title = stringResource(R.string.tab_settings),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_open_app_classification)) {
+                        navController.navigate(AppClassification)
+                    },
+                ),
+            )
+        }
+        composable<AppClassification> {
+            PlaceholderScreen(title = stringResource(R.string.title_app_classification))
+        }
+        composable<PerceivedInput> { entry ->
+            val sessionId = entry.toRoute<PerceivedInput>().sessionId
+            PlaceholderScreen(
+                title = stringResource(R.string.title_perceived_input),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_next)) { navController.showReportAfterPerceivedInput(sessionId) },
+                ),
+            )
+        }
+        composable<SessionReport> {
+            PlaceholderScreen(
+                title = stringResource(R.string.title_session_report),
+                actions = listOf(
+                    PlaceholderAction(stringResource(R.string.placeholder_close)) { navController.popBackStack() },
+                ),
+            )
         }
     }
+}
+
+/** 탭마다 백스택과 화면 상태를 따로 보존한다. 시작 탭(타이머)이 아닌 탭에서 뒤로가기를 누르면 타이머로 돌아온다 */
+private fun NavController.navigateToTab(tab: TopLevelTab) = navigate(tab.route) {
+    popUpTo(graph.findStartDestination().id) { saveState = true }
+    launchSingleTop = true
+    restoreState = true
+}
+
+/** 체감 입력을 마치면 그 자리를 리포트로 바꾼다. 리포트에서 뒤로가면 체감 입력이 아니라 타이머로 돌아온다 */
+private fun NavController.showReportAfterPerceivedInput(sessionId: Long) = navigate(SessionReport(sessionId)) {
+    popUpTo<PerceivedInput> { inclusive = true }
+}
+
+/** 온보딩을 마치면 백스택에서 지운다. 타이머에서 뒤로가면 앱을 나간다 */
+private fun NavController.finishOnboarding() = navigate(Timer) {
+    popUpTo<Onboarding> { inclusive = true }
+    launchSingleTop = true
 }
