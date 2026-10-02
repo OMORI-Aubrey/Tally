@@ -30,4 +30,21 @@ interface StudySessionDao {
     /** [getUnfinished]를 관찰한다. 타이머 화면이 IDLE/RUNNING을 이 값으로 정한다 */
     @Query("SELECT * FROM StudySession WHERE endAt IS NULL ORDER BY startAt DESC LIMIT 1")
     fun observeUnfinished(): Flow<StudySession?>
+
+    // 과목 (§8.1.1). 과목은 세션의 라벨 문자열이라 별도 테이블 없이 세션에서 모은다
+
+    /** 세션에 쓰인 과목별 세션 수와 마지막 세션 시각. 정렬은 저장소가 추가만 한 과목과 합친 뒤에 한다 */
+    @Query(
+        "SELECT subjectName AS name, COUNT(*) AS sessionCount, MAX(startAt) AS lastStartAt FROM StudySession " +
+            "WHERE subjectName IS NOT NULL GROUP BY subjectName"
+    )
+    fun observeSubjectStats(): Flow<List<SubjectStat>>
+
+    /** 가장 최근 세션의 과목. 세션이 없거나 과목 없이 시작했으면 null */
+    @Query("SELECT subjectName FROM StudySession ORDER BY startAt DESC LIMIT 1")
+    suspend fun getLastSubject(): String?
+
+    /** 과거 세션까지 소급해 바꾼다. 바뀐 세션 수를 돌려준다 */
+    @Query("UPDATE StudySession SET subjectName = :newName WHERE subjectName = :oldName")
+    suspend fun renameSubject(oldName: String, newName: String): Int
 }

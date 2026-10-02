@@ -22,6 +22,11 @@ data class AppSettings(
     val selfReportedDailyMin: Int? = null,
     /** 칩 목록에서 숨긴 과목. 세션 데이터는 그대로 둔다 (§8.1.1) */
     val hiddenSubjects: Set<String> = emptySet(),
+    /**
+     * 과목 시트에서 직접 추가한 과목 → 추가한 시각. 과목은 세션의 라벨이라 따로 저장하지 않지만(§12.2),
+     * 아직 세션에 쓰지 않은 과목도 칩에 남아야 해서 여기에 둔다
+     */
+    val addedSubjects: Map<String, Long> = emptyMap(),
     /** 기준선 활성 조건 완화(12 → 6세션). debug 빌드에서만 효과가 있다 (§5.3) */
     val relaxedBaseline: Boolean = false,
 )
@@ -36,6 +41,7 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
                 onboardingDone = prefs[ONBOARDING_DONE] ?: false,
                 selfReportedDailyMin = prefs[SELF_REPORTED_DAILY_MIN],
                 hiddenSubjects = prefs[HIDDEN_SUBJECTS].orEmpty(),
+                addedSubjects = decodeAdded(prefs[ADDED_SUBJECTS].orEmpty()),
                 relaxedBaseline = prefs[RELAXED_BASELINE] ?: false,
             )
         }
@@ -58,6 +64,30 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    /** 과목을 추가한다. 이미 있으면 추가 시각만 새로 하고, 칩에서 숨긴 과목이었으면 다시 보이게 한다 */
+    suspend fun addSubject(subjectName: String, addedAt: Long) {
+        dataStore.edit {
+            it[ADDED_SUBJECTS] = encodeAdded(decodeAdded(it[ADDED_SUBJECTS].orEmpty()) + (subjectName to addedAt))
+            it[HIDDEN_SUBJECTS] = it[HIDDEN_SUBJECTS].orEmpty() - subjectName
+        }
+    }
+
+    /**
+     * 과목 이름이 바뀐 뒤 설정을 따라 고친다. 추가 기록은 새 이름으로 옮기고(이미 있으면 더 최근 시각),
+     * 옛 이름은 숨김 목록에서 뺀다. 새 이름의 숨김 여부는 그대로 둔다.
+     */
+    suspend fun renameSubject(oldName: String, newName: String) {
+        dataStore.edit {
+            val added = decodeAdded(it[ADDED_SUBJECTS].orEmpty())
+            val oldAddedAt = added[oldName]
+            if (oldAddedAt != null) {
+                val merged = maxOf(oldAddedAt, added[newName] ?: oldAddedAt)
+                it[ADDED_SUBJECTS] = encodeAdded(added - oldName + (newName to merged))
+            }
+            it[HIDDEN_SUBJECTS] = it[HIDDEN_SUBJECTS].orEmpty() - oldName
+        }
+    }
+
     suspend fun setRelaxedBaseline(enabled: Boolean) {
         dataStore.edit { it[RELAXED_BASELINE] = enabled }
     }
@@ -69,6 +99,19 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         private val SELF_REPORTED_DAILY_MIN = intPreferencesKey("selfReportedDailyMin")
         private val HIDDEN_SUBJECTS = stringSetPreferencesKey("hiddenSubjects")
         private val RELAXED_BASELINE = booleanPreferencesKey("relaxedBaseline")
+        private val ADDED_SUBJECTS = stringSetPreferencesKey("addedSubjects")
+
+        // "추가시각\t이름"으로 저장한다. 과목 이름은 공백을 정리해 넣으므로 탭이 남지 않는다(SubjectName.normalize)
+        private const val ADDED_SEPARATOR = '\t'
+
+        private fun encodeAdded(added: Map<String, Long>): Set<String> =
+            added.map { (name, addedAt) -> "$addedAt$ADDED_SEPARATOR$name" }.toSet()
+
+        private fun decodeAdded(entries: Set<String>): Map<String, Long> = entries.mapNotNull { entry ->
+            val at = entry.indexOf(ADDED_SEPARATOR)
+            val addedAt = entry.substring(0, at.coerceAtLeast(0)).toLongOrNull()
+            if (at < 0 || addedAt == null) null else entry.substring(at + 1) to addedAt
+        }.toMap()
 
         fun create(context: Context): AppSettingsStore = AppSettingsStore(
             PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(FILE_NAME) },

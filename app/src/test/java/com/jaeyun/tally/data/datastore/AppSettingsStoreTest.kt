@@ -64,4 +64,30 @@ class AppSettingsStoreTest {
 
         assertEquals(setOf("수햑"), store.settings.first().hiddenSubjects)
     }
+
+    @Test
+    fun `과목 추가는 시각과 함께 남고 숨김을 푼다`() = runTest {
+        val store = store()
+        store.setSubjectHidden("코딩 테스트", hidden = true)
+        store.addSubject("코틀린", addedAt = 10)
+        store.addSubject("코딩 테스트", addedAt = 20)
+
+        val settings = store.settings.first()
+        assertEquals(mapOf("코틀린" to 10L, "코딩 테스트" to 20L), settings.addedSubjects)
+        assertEquals(emptySet<String>(), settings.hiddenSubjects)
+    }
+
+    @Test
+    fun `이름을 바꾸면 추가 기록이 새 이름으로 옮겨지고 옛 이름 숨김이 풀린다`() = runTest {
+        val store = store()
+        store.addSubject("수햑", addedAt = 30)
+        store.addSubject("수학", addedAt = 10)
+        store.setSubjectHidden("수햑", hidden = true)
+
+        store.renameSubject("수햑", "수학")
+
+        val settings = store.settings.first()
+        assertEquals(mapOf("수학" to 30L), settings.addedSubjects)
+        assertEquals(emptySet<String>(), settings.hiddenSubjects)
+    }
 }
