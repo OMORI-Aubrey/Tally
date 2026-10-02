@@ -42,6 +42,28 @@
     <string name="subject_rename_confirm">바꾸기</string>
     <string name="cancel">취소</string>
 
+    <!-- 기록 탭 (§8.4) -->
+    <string name="records_empty">세션을 마치면 여기에 기록이 쌓입니다</string>
+    <string name="records_sessions_title">세션 목록</string>
+    <string name="records_today">오늘</string>
+    <string name="records_yesterday">어제</string>
+    <!-- 9월 28일 (월) -->
+    <string name="records_date">%1$d월 %2$d일 (%3$s)</string>
+    <!-- 세션 목록 오른쪽 값의 이름. 머리말에 한 번만 쓴다 -->
+    <string name="records_sitting_column">착석</string>
+    <!-- 통계 제외 세션은 화면에서 가운뎃줄로만 보이고, 이 문구는 화면 낭독기가 읽는다 -->
+    <string name="records_excluded">통계 제외</string>
+
+    <!-- 시간 표기 (PLAN.md §4). 세션 단위는 한글, 주간·누적 총량은 h m -->
+    <string name="duration_seconds">%1$d초</string>
+    <string name="duration_minutes">%1$d분</string>
+    <string name="duration_hours">%1$d시간</string>
+    <string name="duration_hours_minutes">%1$d시간 %2$d분</string>
+    <string name="total_seconds">%1$ds</string>
+    <string name="total_minutes">%1$dm</string>
+    <string name="total_hours">%1$dh</string>
+    <string name="total_hours_minutes">%1$dh %2$dm</string>
+
     <!-- 빈 자리 화면(#5). 화면을 구현하면 쓰지 않게 된 것부터 지운다 -->
     <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
