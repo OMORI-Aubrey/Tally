@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import com.jaeyun.tally.ui.components.HighlightedText
 import com.jaeyun.tally.ui.components.NotebookPaper
 import com.jaeyun.tally.ui.components.SketchBoxButton
 import com.jaeyun.tally.ui.components.SketchCircleButton
+import com.jaeyun.tally.ui.components.SubjectChipRow
 import com.jaeyun.tally.ui.components.TabularDigitsText
 import com.jaeyun.tally.ui.components.TallyLogo
 import com.jaeyun.tally.ui.theme.BluePen
@@ -46,7 +48,8 @@ import com.jaeyun.tally.util.formatElapsedClock
 import kotlinx.coroutines.delay
 
 /**
- * 타이머 탭. IDLE은 시작 버튼 + 세션 경계 안내, RUNNING은 경과 시간·과목·종료 버튼만 둔다(§8.5).
+ * 타이머 탭. IDLE은 과목 칩 + 시작 버튼 + 세션 경계 안내, RUNNING은 경과 시간·과목·종료 버튼만 둔다(§8.5).
+ * 과목은 선택 사항이라 시작 버튼은 항상 누를 수 있다. `+` 칩은 과목 시트를 연다(§8.1.1).
  *
  * 시작하면 하단 탭이 내려가는 동안 종료 버튼이 위에서 내려오며 나타나고, 이어서 경과 시간이 왼쪽 글자부터 나타난다.
  * 앱을 다시 열어 RUNNING을 복원할 때는 애니메이션 없이 그린다.
@@ -63,9 +66,12 @@ fun TimerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState) {
-        if (uiState !is TimerUiState.Loading) onRunningChange(uiState is TimerUiState.Running)
+    val running = when (uiState) {
+        TimerUiState.Loading -> null
+        is TimerUiState.Idle -> false
+        is TimerUiState.Running -> true
     }
+    LaunchedEffect(running) { if (running != null) onRunningChange(running) }
     // 이 화면에서 시작을 눌렀을 때만 RUNNING 등장 애니메이션을 한다
     var animateEntrance by remember { mutableStateOf(false) }
 
@@ -79,11 +85,17 @@ fun TimerScreen(
 
     when (val state = uiState) {
         TimerUiState.Loading -> Box(modifier.fillMaxSize())
-        TimerUiState.Idle -> TimerIdle(
+        is TimerUiState.Idle -> TimerIdle(
+            state = state,
             onStart = {
                 animateEntrance = true
                 viewModel.start()
             },
+            onToggleSubject = viewModel::toggleSubject,
+            onPickSubject = viewModel::selectSubject,
+            onAddSubject = viewModel::addSubject,
+            onRenameSubject = viewModel::renameSubject,
+            onSetSubjectHidden = viewModel::setSubjectHidden,
             modifier = modifier,
         )
         is TimerUiState.Running -> TimerRunning(
@@ -99,7 +111,19 @@ fun TimerScreen(
 }
 
 @Composable
-private fun TimerIdle(onStart: () -> Unit, modifier: Modifier = Modifier) {
+private fun TimerIdle(
+    state: TimerUiState.Idle,
+    onStart: () -> Unit,
+    onToggleSubject: (String) -> Unit,
+    onPickSubject: (String) -> Unit,
+    onAddSubject: (String) -> Boolean,
+    onRenameSubject: (oldName: String, newName: String) -> Boolean,
+    onSetSubjectHidden: (name: String, hidden: Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var sheetOpen by rememberSaveable { mutableStateOf(false) }
+    // 이름을 바꾸는 중인 과목. 칩 길게 누르기와 시트 ⋮ 양쪽에서 연다
+    var renaming by rememberSaveable { mutableStateOf<String?>(null) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -107,17 +131,57 @@ private fun TimerIdle(onStart: () -> Unit, modifier: Modifier = Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TallyLogo(Modifier.align(Alignment.Start))
-        // TODO(#7) 과목 칩, TODO(#13) 주간 요약 줄
-        Spacer(Modifier.weight(1f))
+        // TODO(#13) 주간 요약 줄
+        // 남는 공간을 로고~과목 : 과목~시작 버튼 : 아래 = 0.3 : 0.7 : 0.4로 나눈다. 과목은 위쪽에, 시작 버튼은 그대로
+        Spacer(Modifier.weight(0.3f))
+        Column(Modifier.align(Alignment.Start)) {
+            Text(stringResource(R.string.subject_chips_label), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
+            Spacer(Modifier.height(4.dp))
+            SubjectChipRow(
+                subjects = state.chips,
+                selected = state.selected,
+                onToggle = onToggleSubject,
+                onAdd = { sheetOpen = true },
+                onRename = { renaming = it },
+                onHide = { onSetSubjectHidden(it, true) },
+            )
+        }
+        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.weight(0.7f))
         SketchCircleButton(
             text = stringResource(R.string.timer_start),
             onClick = onStart,
             modifier = Modifier.size(232.dp),
         )
         Spacer(Modifier.height(16.dp))
-        Text(stringResource(R.string.timer_boundary_hint), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
-        // 남는 공간을 위:아래 = 1:0.4로 나눠 시작 버튼을 탭 바에서 조금 띄운다
+        // 과목이 없으면 끊을 경계도 없으니, 과목 없이 시작해도 된다고 알린다(§8.5.1)
+        val hint = if (state.chips.isEmpty()) R.string.timer_no_subject_hint else R.string.timer_boundary_hint
+        Text(stringResource(hint), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
         Spacer(Modifier.weight(0.4f))
+    }
+
+    if (sheetOpen) {
+        SubjectSheet(
+            subjects = state.sheetSubjects,
+            onDismiss = { sheetOpen = false },
+            onPick = {
+                onPickSubject(it)
+                sheetOpen = false
+            },
+            onAdd = { raw -> onAddSubject(raw).also { added -> if (added) sheetOpen = false } },
+            onRenameRequest = { renaming = it },
+            onToggleHidden = { onSetSubjectHidden(it.name, !it.hidden) },
+        )
+    }
+
+    val renameTarget = state.sheetSubjects.firstOrNull { it.name == renaming }
+    if (renameTarget != null) {
+        RenameSubjectDialog(
+            subject = renameTarget,
+            existing = state.sheetSubjects,
+            onDismiss = { renaming = null },
+            onConfirm = { newName -> if (onRenameSubject(renameTarget.name, newName)) renaming = null },
+        )
     }
 }
 
@@ -153,9 +217,9 @@ private fun TimerRunning(
         Spacer(Modifier.weight(0.8f))
         // 과목이 없으면 빈 줄로 둔다. "(과목 없음)"으로 채우지 않는다(와이어프레임 §0 원칙 6)
         if (state.subjectName != null) {
-            HighlightedText(state.subjectName, style = MaterialTheme.typography.titleLarge, modifier = frameModifier)
+            HighlightedText(state.subjectName, style = MaterialTheme.typography.headlineLarge, modifier = frameModifier)
         } else {
-            Text("", style = MaterialTheme.typography.titleLarge, color = Pencil)
+            Text("", style = MaterialTheme.typography.headlineLarge, color = Pencil)
         }
         Spacer(Modifier.height(8.dp))
         TabularDigitsText(
