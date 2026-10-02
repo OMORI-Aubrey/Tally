@@ -9,13 +9,26 @@
 
     <!--
         Android 11+ 패키지 가시성. UsageEvents의 packageName을 앱 이름·카테고리로 풀어내려면
-        대상 앱이 보여야 한다. QUERY_ALL_PACKAGES 대신 런처 앱만 조회 대상으로 선언한다.
+        대상 앱이 보여야 한다. QUERY_ALL_PACKAGES 대신 필요한 인텐트만 선언한다 (§5.1 자동 분류, #11).
     -->
     <queries>
+        <!-- 런처에 아이콘이 있는 앱: 앱 이름·카테고리 -->
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!-- 기본 홈 앱 → 허용 -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
+        <!-- 웹 브라우저 → 딴짓 기본값 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <!-- 전화 앱은 TelecomManager의 기본·시스템 전화 앱으로 찾는다. DIAL에는 줌 등도 응답해 쓰지 않는다 -->
     </queries>
 
     <!-- 앱 사용 로그는 기기를 벗어나지 않는다 (§11). 클라우드 백업·기기 간 이전 모두 제외 -->

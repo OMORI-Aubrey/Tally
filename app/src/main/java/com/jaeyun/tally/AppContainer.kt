@@ -7,6 +7,8 @@ import com.jaeyun.tally.data.datastore.AppSettingsStore
 import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.room.TallyDatabase
+import com.jaeyun.tally.data.usagestats.AppClassifier
+import com.jaeyun.tally.data.usagestats.UsageEventSource
 
 /**
  * 수동 DI 컨테이너 (§10.1). 앱 전역 단일 인스턴스이며 [TallyApplication]이 소유한다.
@@ -23,6 +25,10 @@ class AppContainer(private val appContext: Context) {
     val sessionRepository: SessionRepository by lazy { SessionRepository(database) }
 
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.studySessionDao(), settingsStore) }
+
+    val usageEventSource: UsageEventSource by lazy { UsageEventSource(appContext) }
+
+    val appClassifier: AppClassifier by lazy { AppClassifier(appContext) }
 }
 
 /**
