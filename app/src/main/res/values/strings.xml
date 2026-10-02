@@ -12,6 +12,11 @@
     <string name="title_perceived_input">체감 입력</string>
     <string name="title_session_report">세션 리포트</string>
 
+    <!-- 타이머 -->
+    <string name="timer_start">시작</string>
+    <string name="timer_finish">종료</string>
+    <string name="timer_boundary_hint">과목이 바뀌면 끊어주세요</string>
+
     <!-- 빈 자리 화면(#5). 화면을 구현하면 쓰지 않게 된 것부터 지운다 -->
     <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
