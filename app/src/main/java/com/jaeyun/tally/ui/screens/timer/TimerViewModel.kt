@@ -9,7 +9,11 @@ import com.jaeyun.tally.appContainer
 import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.repository.SubjectSummary
+import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.domain.model.SubjectName
+import com.jaeyun.tally.ui.components.WeeklySummary
+import com.jaeyun.tally.util.WeekRange
+import com.jaeyun.tally.util.weekRangeOf
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +23,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.ZoneId
 
 sealed interface TimerUiState {
     /** 진행 중 세션을 아직 확인하지 못했다. IDLE을 잠깐 보였다가 RUNNING으로 바뀌는 깜빡임을 막는다 */
@@ -28,11 +33,13 @@ sealed interface TimerUiState {
      * @param chips 칩에 보일 과목. 선택한 과목이 항상 들어 있다
      * @param selected 시작하면 이 과목으로 저장한다. null이면 과목 없이 시작한다
      * @param sheetSubjects 과목 시트 목록(숨긴 과목 포함)
+     * @param weeklySummary 주간 요약 줄. null이면 이번 주에 셀 세션이 없다
      */
     data class Idle(
         val chips: List<String>,
         val selected: String?,
         val sheetSubjects: List<SubjectSummary>,
+        val weeklySummary: WeeklySummary?,
     ) : TimerUiState
 
     /** [subjectName]이 null이면 과목 없이 시작한 세션이다 */
@@ -52,15 +59,32 @@ internal fun subjectChips(recent: List<String>, selected: String?, max: Int = MA
 }
 
 /**
+ * 주간 요약 줄의 숫자 (§8.1). [week]에 시작한 세션 중 통계에 들고 타임라인이 있는 세션의 최장 구간 최댓값과 평균.
+ * 3분 미만 세션은 오조작이고(§6.3 #3), 사용 기록 권한 없이 끝낸 세션은 최장 구간이 없어 세지 않는다.
+ *
+ * 셀 세션이 없으면 null이다. 화면은 숫자 대신 문장을 쓴다 — 최장 구간이 0초뿐인 주도 "0초"를 보이지 않게 null로 본다(§8.5.1).
+ */
+internal fun weeklySummary(sessions: List<StudySession>, week: WeekRange): WeeklySummary? {
+    val lfs = sessions
+        .filter { it.startAt in week && it.isValidForStats && it.hasTimeline }
+        .map { it.lfsSec }
+    val longest = lfs.maxOrNull()?.takeIf { it > 0 } ?: return null
+    return WeeklySummary(longestSec = longest, averageSec = (lfs.sumOf { it.toLong() } / lfs.size).toInt())
+}
+
+/**
  * 타이머 탭 (§8.1, §8.5). 상태는 Room의 진행 중 세션 하나로 정해지므로, 앱을 강제 종료하거나 재부팅해도
  * 다시 열면 RUNNING이 이어진다(§6.3 #5). 경과 시간은 저장하지 않고 화면이 `now − startAt`으로 그린다.
  *
  * 과목은 선택 사항이다(§8.1.1). 처음에는 마지막 세션의 과목을 골라 둔다. 시트에서 추가한 과목은 아직 세션에
  * 쓰지 않았어도 칩에 남는다.
+ *
+ * 주간 요약 줄의 "이번 주"는 상태를 새로 만들 때의 현재 시각으로 정한다. 화면을 떠났다 돌아오면 다시 정해진다.
  */
 class TimerViewModel(
     private val sessions: SessionRepository,
     private val subjects: SubjectRepository,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
 
@@ -74,11 +98,17 @@ class TimerViewModel(
         subjects.recentVisibleSubjects,
         subjects.allSubjects,
         selected,
-    ) { running, recent, all, picked ->
+        sessions.finishedSessions,
+    ) { running, recent, all, picked, finished ->
         if (running != null) {
             TimerUiState.Running(running.id, running.startAt, running.subjectName)
         } else {
-            TimerUiState.Idle(chips = subjectChips(recent, picked), selected = picked, sheetSubjects = all)
+            TimerUiState.Idle(
+                chips = subjectChips(recent, picked),
+                selected = picked,
+                sheetSubjects = all,
+                weeklySummary = weeklySummary(finished, weekRangeOf(clock(), zone())),
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TimerUiState.Loading)
 

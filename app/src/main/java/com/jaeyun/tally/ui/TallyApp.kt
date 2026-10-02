@@ -100,6 +100,7 @@ private fun TallyNavHost(
             TimerScreen(
                 onSessionFinished = { navController.navigate(SessionReport(it)) },
                 onRunningChange = onTimerRunningChange,
+                onOpenRecords = { navController.navigateToTab(TopLevelTab.RECORDS) },
             )
         }
         composable<Records> {
