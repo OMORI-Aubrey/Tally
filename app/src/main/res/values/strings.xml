@@ -25,6 +25,11 @@
     <!-- 화면 낭독기: "두 번 탭하여 기록 보기" -->
     <string name="weekly_summary_open_records">기록 보기</string>
 
+    <!-- 체감 입력 (§3.4). 실측은 보여주지 않는다 -->
+    <string name="perceived_confirm">확인</string>
+    <string name="hours_unit">시간</string>
+    <string name="minutes_unit">분</string>
+
     <!-- 과목 (§8.1.1) -->
     <string name="subject_chips_label">과목 선택</string>
     <string name="subject_add">과목 추가</string>

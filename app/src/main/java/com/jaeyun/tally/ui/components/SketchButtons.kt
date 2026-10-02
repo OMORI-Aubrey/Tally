@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.theme.HighlighterSoft
 import com.jaeyun.tally.ui.theme.Pencil
+import com.jaeyun.tally.ui.theme.PencilFaint
 import com.jaeyun.tally.ui.theme.TallyTheme
 
 /**
@@ -64,29 +66,31 @@ fun SketchCircleButton(
 }
 
 /**
- * 손으로 그린 네모 테두리 버튼. 타이머 종료 버튼으로 쓴다.
+ * 손으로 그린 네모 테두리 버튼. 타이머 종료 버튼, 체감 입력 확인 버튼으로 쓴다.
  *
- * 크기는 [modifier]로 정한다. 글자는 `titleLarge`.
+ * 크기는 [modifier]로 정한다. 글자는 `titleLarge`. 누를 수 없으면([enabled] false) 선과 글자를 흐리게 그린다.
  */
 @Composable
 fun SketchBoxButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
+    val color = if (enabled) Pencil else PencilFaint
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .clickable(role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(Modifier.matchParentSize()) {
             val inset = 4.dp.toPx()
             val halfW = size.width / 2 - inset
             val halfH = size.height / 2 - inset
-            drawSketch(BoxOutline, Offset(size.width / 2, size.height / 2), halfW, halfH, 2.dp)
+            drawSketch(BoxOutline, Offset(size.width / 2, size.height / 2), halfW, halfH, 2.dp, color)
         }
-        Text(text, style = MaterialTheme.typography.titleLarge, color = Pencil, modifier = Modifier.padding(horizontal = 24.dp))
+        Text(text, style = MaterialTheme.typography.titleLarge, color = color, modifier = Modifier.padding(horizontal = 24.dp))
     }
 }
 
@@ -127,7 +131,14 @@ private val BoxOutline = sketch(
     -1.05f, 0.34f, -1.02f, -0.3f, -0.93f, -1.0f,
 )
 
-private fun DrawScope.drawSketch(sketch: Sketch, center: Offset, halfWidth: Float, halfHeight: Float, strokeWidth: Dp) {
+private fun DrawScope.drawSketch(
+    sketch: Sketch,
+    center: Offset,
+    halfWidth: Float,
+    halfHeight: Float,
+    strokeWidth: Dp,
+    color: Color = Pencil,
+) {
     fun Offset.scaled() = Offset(center.x + x * halfWidth, center.y + y * halfHeight)
     val path = Path().apply {
         val start = sketch.start.scaled()
@@ -139,10 +150,10 @@ private fun DrawScope.drawSketch(sketch: Sketch, center: Offset, halfWidth: Floa
             cubicTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
         }
     }
-    drawPath(path, Pencil, style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round))
+    drawPath(path, color, style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round))
 }
 
-@Preview(widthDp = 280, heightDp = 360)
+@Preview(widthDp = 280, heightDp = 460)
 @Composable
 private fun SketchButtonsPreview() {
     TallyTheme {
@@ -153,6 +164,7 @@ private fun SketchButtonsPreview() {
         ) {
             SketchCircleButton(stringResource(R.string.timer_start), onClick = {}, modifier = Modifier.size(200.dp))
             SketchBoxButton(stringResource(R.string.timer_finish), onClick = {}, modifier = Modifier.size(200.dp, 72.dp))
+            SketchBoxButton(stringResource(R.string.perceived_confirm), onClick = {}, modifier = Modifier.size(200.dp, 72.dp), enabled = false)
         }
     }
 }
