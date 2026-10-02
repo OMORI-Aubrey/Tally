@@ -20,6 +20,13 @@ interface AppClassificationDao {
     @Query("SELECT * FROM AppClassification WHERE packageName = :packageName")
     suspend fun get(packageName: String): AppClassification?
 
+    @Query("SELECT * FROM AppClassification WHERE packageName IN (:packageNames)")
+    suspend fun getByPackages(packageNames: List<String>): List<AppClassification>
+
+    /** 자동 분류를 새 규칙으로 갱신할 때 쓴다. 사용자 분류 행은 호출하는 쪽에서 미리 걸러낸다 */
+    @Upsert
+    suspend fun upsertAll(classifications: List<AppClassification>)
+
     @Query("SELECT * FROM AppClassification ORDER BY appLabel")
     suspend fun getAll(): List<AppClassification>
 }

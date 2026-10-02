@@ -1,6 +1,7 @@
 package com.jaeyun.tally
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.jaeyun.tally.data.datastore.AppSettingsStore
@@ -22,7 +23,16 @@ class AppContainer(private val appContext: Context) {
 
     val settingsStore: AppSettingsStore by lazy { AppSettingsStore.create(appContext) }
 
-    val sessionRepository: SessionRepository by lazy { SessionRepository(database) }
+    val sessionRepository: SessionRepository by lazy {
+        SessionRepository(
+            database = database,
+            usageEvents = usageEventSource,
+            classifier = appClassifier,
+            selfPackage = appContext.packageName,
+            // debug 빌드는 복원 불변식이 깨지면 바로 멈춘다. BuildConfig 대신 debuggable 플래그로 판단한다
+            strictInvariant = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,
+        )
+    }
 
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.studySessionDao(), settingsStore) }
 
