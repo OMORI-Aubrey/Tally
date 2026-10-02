@@ -56,12 +56,12 @@ import kotlinx.coroutines.delay
  * 앱을 다시 열어 RUNNING을 복원할 때는 애니메이션 없이 그린다.
  *
  * @param onRunningChange 진행 중 세션을 확인하면 진행 중 여부를 알린다. 앱이 진행 중에는 하단 탭을 숨긴다(와이어프레임 §2-B)
- * @param onSessionFinished 종료한 세션 id
+ * @param onSessionFinished 종료한 세션. 체감을 물을 세션이면 리포트 전에 체감 입력으로 간다
  * @param onOpenRecords 주간 요약 줄을 눌렀다. 기록 탭으로 간다
  */
 @Composable
 fun TimerScreen(
-    onSessionFinished: (sessionId: Long) -> Unit,
+    onSessionFinished: (FinishedSession) -> Unit,
     onRunningChange: (Boolean) -> Unit,
     onOpenRecords: () -> Unit,
     modifier: Modifier = Modifier,

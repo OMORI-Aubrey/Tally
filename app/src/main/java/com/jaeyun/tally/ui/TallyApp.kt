@@ -97,9 +97,15 @@ private fun TallyNavHost(
             )
         }
         composable<Timer> {
-            // TODO(P3 #14) 체감 입력 트리거가 붙으면 주 1회는 PerceivedInput을 거친다
             TimerScreen(
-                onSessionFinished = { navController.navigate(SessionReport(it)) },
+                // 주 1회는 실측을 보기 전에 체감을 먼저 묻는다(§3.4)
+                onSessionFinished = { done ->
+                    if (done.askPerceived) {
+                        navController.navigate(PerceivedInput(done.sessionId))
+                    } else {
+                        navController.navigate(SessionReport(done.sessionId))
+                    }
+                },
                 onRunningChange = onTimerRunningChange,
                 onOpenRecords = { navController.navigateToTab(TopLevelTab.RECORDS) },
             )
