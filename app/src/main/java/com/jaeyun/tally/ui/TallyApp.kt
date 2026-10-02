@@ -26,6 +26,7 @@ import com.jaeyun.tally.ui.components.IndexTabBar
 import com.jaeyun.tally.ui.components.notebookPaper
 import com.jaeyun.tally.ui.screens.PlaceholderAction
 import com.jaeyun.tally.ui.screens.PlaceholderScreen
+import com.jaeyun.tally.ui.screens.records.RecordsScreen
 import com.jaeyun.tally.ui.screens.timer.TimerScreen
 import com.jaeyun.tally.ui.theme.TapeBlue
 import com.jaeyun.tally.ui.theme.TapeMint
@@ -77,8 +78,7 @@ private val TopLevelTab.color
         TopLevelTab.SETTINGS -> TapeMint
     }
 
-// TODO(#7~) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
-private const val PLACEHOLDER_SESSION_ID = 1L
+// TODO(#14~) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
 
 @Composable
 private fun TallyNavHost(
@@ -103,14 +103,7 @@ private fun TallyNavHost(
             )
         }
         composable<Records> {
-            PlaceholderScreen(
-                title = stringResource(R.string.tab_records),
-                actions = listOf(
-                    PlaceholderAction(stringResource(R.string.placeholder_open_report)) {
-                        navController.navigate(SessionReport(PLACEHOLDER_SESSION_ID))
-                    },
-                ),
-            )
+            RecordsScreen()
         }
         composable<Settings> {
             PlaceholderScreen(

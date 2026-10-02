@@ -14,6 +14,9 @@ class SessionRepository(private val database: TallyDatabase) {
     /** 진행 중 세션. 없으면 null */
     val runningSession: Flow<StudySession?> = dao.observeUnfinished()
 
+    /** 끝난 세션 전체. 최근에 시작한 순서 */
+    val finishedSessions: Flow<List<StudySession>> = dao.observeFinished()
+
     /**
      * 시작 즉시 저장해 앱이 강제 종료·재부팅돼도 시작 시각이 남게 한다.
      * 이미 진행 중인 세션이 있으면(버튼 연타 등) 새로 만들지 않고 그 세션 id를 돌려준다.
