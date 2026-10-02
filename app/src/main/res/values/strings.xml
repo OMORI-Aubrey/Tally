@@ -18,6 +18,13 @@
     <string name="timer_boundary_hint">과목이 바뀌면 끊어주세요</string>
     <string name="timer_no_subject_hint">과목 없이도 시작할 수 있어요</string>
 
+    <!-- 주간 요약 줄 (§8.1): 이번 주 최장 47분 · 평균 28분. 숫자만 파란 볼펜으로 쓰려고 이름을 따로 둔다 -->
+    <string name="weekly_summary_longest">이번 주 최장</string>
+    <string name="weekly_summary_average">· 평균</string>
+    <string name="weekly_summary_empty">첫 세션을 시작해보세요</string>
+    <!-- 화면 낭독기: "두 번 탭하여 기록 보기" -->
+    <string name="weekly_summary_open_records">기록 보기</string>
+
     <!-- 과목 (§8.1.1) -->
     <string name="subject_chips_label">과목 선택</string>
     <string name="subject_add">과목 추가</string>

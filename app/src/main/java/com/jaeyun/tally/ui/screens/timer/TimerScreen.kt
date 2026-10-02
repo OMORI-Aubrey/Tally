@@ -41,6 +41,7 @@ import com.jaeyun.tally.ui.components.SketchCircleButton
 import com.jaeyun.tally.ui.components.SubjectChipRow
 import com.jaeyun.tally.ui.components.TabularDigitsText
 import com.jaeyun.tally.ui.components.TallyLogo
+import com.jaeyun.tally.ui.components.WeeklySummaryLine
 import com.jaeyun.tally.ui.theme.BluePen
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft
@@ -48,7 +49,7 @@ import com.jaeyun.tally.util.formatElapsedClock
 import kotlinx.coroutines.delay
 
 /**
- * 타이머 탭. IDLE은 과목 칩 + 시작 버튼 + 세션 경계 안내, RUNNING은 경과 시간·과목·종료 버튼만 둔다(§8.5).
+ * 타이머 탭. IDLE은 주간 요약 줄 + 과목 칩 + 시작 버튼 + 세션 경계 안내, RUNNING은 경과 시간·과목·종료 버튼만 둔다(§8.5).
  * 과목은 선택 사항이라 시작 버튼은 항상 누를 수 있다. `+` 칩은 과목 시트를 연다(§8.1.1).
  *
  * 시작하면 하단 탭이 내려가는 동안 종료 버튼이 위에서 내려오며 나타나고, 이어서 경과 시간이 왼쪽 글자부터 나타난다.
@@ -56,11 +57,13 @@ import kotlinx.coroutines.delay
  *
  * @param onRunningChange 진행 중 세션을 확인하면 진행 중 여부를 알린다. 앱이 진행 중에는 하단 탭을 숨긴다(와이어프레임 §2-B)
  * @param onSessionFinished 종료한 세션 id
+ * @param onOpenRecords 주간 요약 줄을 눌렀다. 기록 탭으로 간다
  */
 @Composable
 fun TimerScreen(
     onSessionFinished: (sessionId: Long) -> Unit,
     onRunningChange: (Boolean) -> Unit,
+    onOpenRecords: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TimerViewModel = viewModel(factory = TimerViewModel.Factory),
 ) {
@@ -96,6 +99,7 @@ fun TimerScreen(
             onAddSubject = viewModel::addSubject,
             onRenameSubject = viewModel::renameSubject,
             onSetSubjectHidden = viewModel::setSubjectHidden,
+            onOpenRecords = onOpenRecords,
             modifier = modifier,
         )
         is TimerUiState.Running -> TimerRunning(
@@ -119,6 +123,7 @@ private fun TimerIdle(
     onAddSubject: (String) -> Boolean,
     onRenameSubject: (oldName: String, newName: String) -> Boolean,
     onSetSubjectHidden: (name: String, hidden: Boolean) -> Unit,
+    onOpenRecords: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var sheetOpen by rememberSaveable { mutableStateOf(false) }
@@ -131,9 +136,11 @@ private fun TimerIdle(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         TallyLogo(Modifier.align(Alignment.Start))
-        // TODO(#13) 주간 요약 줄
-        // 남는 공간을 로고~과목 : 과목~시작 버튼 : 아래 = 0.3 : 0.7 : 0.4로 나눈다. 과목은 위쪽에, 시작 버튼은 그대로
-        Spacer(Modifier.weight(0.3f))
+        Spacer(Modifier.height(8.dp))
+        WeeklySummaryLine(state.weeklySummary, onClick = onOpenRecords, modifier = Modifier.align(Alignment.Start))
+        // 남는 공간을 요약 줄~과목 : 과목~시작 버튼 : 아래 = 0.2 : 0.7 : 0.5로 나눈다.
+        // 요약 줄이 들어온 만큼 위쪽 비중을 줄여 시작 버튼 자리를 #6 때와 비슷하게 둔다
+        Spacer(Modifier.weight(0.2f))
         Column(Modifier.align(Alignment.Start)) {
             Text(stringResource(R.string.subject_chips_label), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
             Spacer(Modifier.height(4.dp))
@@ -157,7 +164,7 @@ private fun TimerIdle(
         // 과목이 없으면 끊을 경계도 없으니, 과목 없이 시작해도 된다고 알린다(§8.5.1)
         val hint = if (state.chips.isEmpty()) R.string.timer_no_subject_hint else R.string.timer_boundary_hint
         Text(stringResource(hint), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
-        Spacer(Modifier.weight(0.4f))
+        Spacer(Modifier.weight(0.5f))
     }
 
     if (sheetOpen) {

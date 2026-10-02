@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 주간 요약 줄 끝의 화살표: 연필로 그은 →. 색은 쓰는 곳에서 tint로 준다 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M4,12.3 C9,11.9 14,11.8 19.5,11.9 M14.6,7.2 L19.5,11.9 L14.8,16.8"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
