@@ -32,6 +32,23 @@
     <string name="probe_sample_none">→ 이후 이벤트 없음 %1$s</string>
     <string name="probe_sample_keyguard">잠금 해제 %1$s</string>
 
+    <string name="probe_section_last_session">마지막 세션 (#12 저장 결과)</string>
+    <string name="probe_last_session_none">끝난 세션이 없어요. 타이머로 세션을 하나 끝내고 돌아오세요</string>
+    <!-- 시작 ~ 끝 · 길이 · 타임라인 · 지표 규칙 버전 · 통계 -->
+    <string name="probe_last_session_header">%1$s ~ %2$s · %3$s · %4$s · 지표 규칙 v%5$d · %6$s</string>
+    <string name="probe_timeline_yes">타임라인 있음</string>
+    <string name="probe_timeline_no">타임라인 없음(권한 없음)</string>
+    <string name="probe_stats_in">통계 포함</string>
+    <string name="probe_stats_out">통계 제외</string>
+    <string name="probe_last_session_metrics">착석 %1$s · 순공 %2$s · 딴짓 %3$s · LFS %4$s · 이탈 %5$d회 · 밀도 %6$.1f%%</string>
+    <string name="probe_coverage_ok">구간 %1$d개 · 합 %2$s = 세션 길이 ✓</string>
+    <string name="probe_coverage_bad">구간 %1$d개 · 합 %2$s ≠ 세션 길이 %3$s ✗ (불변식 위반)</string>
+    <!-- 시작 ~ 끝 길이 분류 이름 -->
+    <string name="probe_segment_row">%1$s ~ %2$s  %3$s  %4$s  %5$s</string>
+    <string name="probe_category_away">자리 비움</string>
+    <string name="probe_pkg_screen_off">화면 꺼짐</string>
+    <string name="probe_pkg_screen_on">화면 켜짐 (앱 없음)</string>
+
     <string name="probe_section_classification">자동 분류 (조회 범위에서 RESUMED된 앱, 최근순)</string>
     <!-- 앱 이름 — 딴짓/허용 (근거) 패키지 -->
     <string name="probe_classification_row">%1$s — %2$s (%3$s) %4$s</string>
