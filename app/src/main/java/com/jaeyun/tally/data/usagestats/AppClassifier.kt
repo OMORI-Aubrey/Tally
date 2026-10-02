@@ -78,6 +78,12 @@ private val DISTRACT_APP_CATEGORIES = setOf(
     ApplicationInfo.CATEGORY_GAME,
 )
 
+/** 앱 자동 분류. 세션 종료 파이프라인(#12)이 쓰고, 테스트에서는 가짜로 바꾼다 */
+interface AppAutoClassifier {
+    /** 블로킹 호출이다 */
+    fun classifyAll(packageNames: Collection<String>): List<AutoClassification>
+}
+
 data class AutoClassification(
     val packageName: String,
     /** 앱을 찾지 못하면 패키지 이름 */
@@ -92,12 +98,12 @@ data class AutoClassification(
  *
  * `PackageManager` 조회라 IO 디스패처에서 부른다.
  */
-class AppClassifier(private val context: Context) {
+class AppClassifier(private val context: Context) : AppAutoClassifier {
 
     private val packageManager = context.packageManager
 
     /** 홈·브라우저·전화 목록은 한 번만 조회한다 */
-    fun classifyAll(packageNames: Collection<String>): List<AutoClassification> {
+    override fun classifyAll(packageNames: Collection<String>): List<AutoClassification> {
         val launcher = defaultLauncher()
         val browsers = browsers()
         val phones = phoneApps()
