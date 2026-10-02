@@ -104,8 +104,8 @@
 2. **#10 [feat] `MetricsCalculator`** — `domain/metrics`: 지표 6개(§5.2), 인식 격차 `G`(null 규칙 포함)
 3. **#11 [feat] UsageStats 수집 + 앱 자동 분류** — `data/usagestats`
    - `UsageEvents` → `RawEvent` 매핑(4종: `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN`), AppOps 권한 확인
-   - `ApplicationInfo.category` 기반 분류 + 런처·브라우저·전화 앱 판별(§5.1)
-   - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW / DIAL 인텐트 추가
+   - 자동 분류는 기본 딴짓(§4): 본 앱·기본 홈·공부 앱 목록·시스템 앱만 허용. 브라우저·전화·`ApplicationInfo.category` SNS·영상·게임은 시스템 앱이어도 딴짓
+   - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW 인텐트 추가. 홈은 기본 홈 앱만(설정 앱도 HOME에 응답), 전화는 `TelecomManager`의 기본·시스템 전화 앱과 통화 화면(`*.incallui`)만 본다(`ACTION_DIAL`에는 줌도 응답 — 강의 앱을 딴짓으로 오분류)
 4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션). 복원 불변식이 깨지면 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
 5. **#13 [feat] IDLE 주간 요약 줄** — `이번 주 최장 N분 · 평균 N분 ›`. 이번 주 세션이 없으면 `첫 세션을 시작해보세요`
 - 단위 테스트: §14.2 타임라인 13개 케이스(KEYGUARD_HIDDEN 2건, 화면 켜짐 흡수 10초 1건 포함). 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
@@ -178,6 +178,7 @@
 | 단계 | 결정 | 내용 | 이유 | 상태 |
 |---|---|---|---|---|
 | P0 | `[자리 비웠어요]` 구간 표현 | `AppSegment.category`에 `AWAY` 추가. 구간은 남기고 `T_total`·`T_focus`에서 뺀다 | 구간을 지우면 커버리지 불변식(§6.2)이 깨진다 | ✅ 확정 |
+| P2 | 자동 분류 기본값 | **기본 딴짓.** 본 앱·기본 홈 앱·공부 앱 목록(`STUDY_APPS`: 줌·Meet·사전·번역·노트 등)·시스템 앱(정보를 읽을 수 없는 앱 포함)만 허용. 브라우저·전화·SNS·영상·게임은 시스템 앱이어도 딴짓. 나머지 설치 앱(금융 등)은 딴짓으로 시작하고 사용자가 이탈 목록·앱 분류 화면에서 바꾼다(#16, #18) | 공부 중에 쓸 앱은 소수이고, 모르는 앱이 순공에 섞이면 "순공 최대"가 부풀려진다. `ApplicationInfo.category`에 교육·금융이 없어 공부 앱만 목록으로 둔다. 기획서 §5.1의 "그 외 및 미지정 → ALLOWED"와 다르다 | ✅ 확정 |
 | P2 | `AWAY`와 `LFS` | `AWAY`가 `LFS` 연속을 끊는다. 공부 30분 → 자리 비움 → 공부 20분이면 `LFS` 30분 | `LFS`는 "안 끊고 이어간 시간"이다. 자리 비운 앞뒤를 이으면 실제로 없던 긴 집중이 만들어진다. 지표 규칙 버전 1에 포함(P2 자기 사용 전이라 저장된 지표가 없다) | ✅ 확정 |
 | P0 | 권한 없는 세션(타이머 전용) 표현 | `StudySession`에 `hasTimeline: Boolean` 추가, 기준선·판정에서 제외 | 권한이 없으면 착석 외 지표를 계산할 수 없다 | ✅ 확정 |
 | P0 | category 저장 형식 | Kotlin enum → Room TEXT | 문자열 오타 방지 | ✅ 확정 |
