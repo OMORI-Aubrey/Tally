@@ -39,3 +39,9 @@ data class StudySession(
     val hasTimeline: Boolean = false,
     val createdAt: Long,
 )
+
+/**
+ * 통계에 셀 세션: 통계에 들고 타임라인이 있다. 3분 미만 세션은 오조작이고(§6.3 #3), 사용 기록 권한 없이 끝낸 세션은
+ * 실측 지표가 없다 (PLAN.md §4 주간 요약 줄의 숫자, 체감 질문 후보, 리포트의 기록)
+ */
+val StudySession.countsInStats: Boolean get() = isValidForStats && hasTimeline

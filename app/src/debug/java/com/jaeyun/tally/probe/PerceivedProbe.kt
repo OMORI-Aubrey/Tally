@@ -1,7 +1,7 @@
 package com.jaeyun.tally.probe
 
 import com.jaeyun.tally.AppContainer
-import com.jaeyun.tally.ui.screens.timer.countsForWeek
+import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.util.WeekRange
 import com.jaeyun.tally.util.weekRangeOf
 import java.time.ZoneId
@@ -26,7 +26,7 @@ internal suspend fun loadPerceivedWeek(container: AppContainer, now: Long): Perc
     return PerceivedWeekInfo(
         week = week,
         lastAskedAt = repository.lastAskedAt(),
-        candidates = sessions.count { it.countsForWeek },
+        candidates = sessions.count { it.countsInStats },
         answered = sessions.count { it.perceivedFocusMin != null },
     )
 }
