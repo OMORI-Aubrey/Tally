@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.AP
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.jaeyun.tally.data.datastore.AppSettingsStore
 import com.jaeyun.tally.data.repository.SessionRepository
+import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.room.TallyDatabase
 
 /**
@@ -20,6 +21,8 @@ class AppContainer(private val appContext: Context) {
     val settingsStore: AppSettingsStore by lazy { AppSettingsStore.create(appContext) }
 
     val sessionRepository: SessionRepository by lazy { SessionRepository(database) }
+
+    val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.studySessionDao(), settingsStore) }
 }
 
 /**
