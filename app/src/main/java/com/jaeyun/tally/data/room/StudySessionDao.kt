@@ -43,6 +43,12 @@ interface StudySessionDao {
     @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL AND startAt >= :startAt AND startAt < :endAt ORDER BY startAt")
     suspend fun getFinishedStartedBetween(startAt: Long, endAt: Long): List<StudySession>
 
+    /**
+     * [id]를 뺀 세션 중 최장 구간의 최댓값(리포트의 기록, §8.2). 통계에 셀 세션(`countsInStats`)만 본다. 없으면 null
+     */
+    @Query("SELECT MAX(lfsSec) FROM StudySession WHERE id != :id AND endAt IS NOT NULL AND isValidForStats = 1 AND hasTimeline = 1")
+    suspend fun getBestLfsExcept(id: Long): Int?
+
     /** 체감 집중 시간(분)을 적는다 (§3.4). null이면 지운다 */
     @Query("UPDATE StudySession SET perceivedFocusMin = :minutes WHERE id = :id")
     suspend fun setPerceivedFocus(id: Long, minutes: Int?)

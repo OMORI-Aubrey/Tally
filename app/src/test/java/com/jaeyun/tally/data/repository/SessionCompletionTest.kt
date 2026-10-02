@@ -71,6 +71,22 @@ class SessionCompletionTest {
         assertFalse(done.session.isValidForStats)
     }
 
+    @Test
+    fun `다시 복원한 타임라인이 저장된 구간과 같은지 본다`() {
+        val stored = completeSession(
+            session,
+            now = 30 * MIN,
+            timeline = timeline(Segment("self", ALLOWED, 0, 10 * MIN), Segment("yt", DISTRACT, 10 * MIN, 30 * MIN)),
+            strictInvariant = true,
+        ) {}.segments
+
+        assertTrue(sameTimeline(timeline(Segment("self", ALLOWED, 0, 10 * MIN), Segment("yt", DISTRACT, 10 * MIN, 30 * MIN)), stored))
+        // 사용 기록이 지워져 본 앱 구간 하나만 남았다
+        assertFalse(sameTimeline(timeline(Segment("self", ALLOWED, 0, 30 * MIN)), stored))
+        // 분류가 다르다
+        assertFalse(sameTimeline(timeline(Segment("self", ALLOWED, 0, 10 * MIN), Segment("yt", ALLOWED, 10 * MIN, 30 * MIN)), stored))
+    }
+
     @Test(expected = IllegalStateException::class)
     fun `debug 빌드는 불변식이 깨지면 예외`() {
         completeSession(
