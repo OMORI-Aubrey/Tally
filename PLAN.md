@@ -99,13 +99,14 @@
    - `domain/reconstructor`: §6.2 1~7단계(seed 구간, 구간 생성, 짧은 구간 흡수(5초, `__SCREEN_ON_UNKNOWN__`만 10초), 분류 태깅, 동일 분류 병합, 불변식 검증)
    - **KEYGUARD_HIDDEN 규칙(§4 확정):** 입력 이벤트에 `KEYGUARD_HIDDEN`을 더해 4종으로 한다. 루프 내내 마지막 `ACTIVITY_RESUMED` 패키지를 추적하고(초깃값은 본 앱), 현재 구간이 `__SCREEN_ON_UNKNOWN__`일 때 `KEYGUARD_HIDDEN`이 오면 그 패키지로 구간을 전환한다. 그 외 상태에서는 무시한다
    - 분류는 `(packageName) -> Category` 함수로 주입받는다
-   - 불변식 위반 시 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
+   - 6단계에서 합친 구간의 패키지는 그 안에서 가장 오래 머문 패키지로 남긴다(이탈 목록이 대표 앱 하나로 보여주므로, 기획서에는 정해져 있지 않다)
+   - 불변식 위반은 결과로 돌려준다(`ReconstructedTimeline.invariantViolation`). debug 예외 / release 로그 + `isValidForStats = false` 정책은 `BuildConfig`를 아는 #12가 적용한다
 2. **#10 [feat] `MetricsCalculator`** — `domain/metrics`: 지표 6개(§5.2), 인식 격차 `G`(null 규칙 포함)
 3. **#11 [feat] UsageStats 수집 + 앱 자동 분류** — `data/usagestats`
    - `UsageEvents` → `RawEvent` 매핑(4종: `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN`), AppOps 권한 확인
    - `ApplicationInfo.category` 기반 분류 + 런처·브라우저·전화 앱 판별(§5.1)
    - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW / DIAL 인텐트 추가
-4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션)
+4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션). 복원 불변식이 깨지면 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
 5. **#13 [feat] IDLE 주간 요약 줄** — `이번 주 최장 N분 · 평균 N분 ›`. 이번 주 세션이 없으면 `첫 세션을 시작해보세요`
 - 단위 테스트: §14.2 타임라인 13개 케이스(KEYGUARD_HIDDEN 2건, 화면 켜짐 흡수 10초 1건 포함). 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
 - 실기기: §14.1 시나리오 3종 간이 확인(정식 실험은 평가 기간에). **자기 사용 개시일을 진행 기록에 적는다**
