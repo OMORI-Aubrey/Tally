@@ -4,6 +4,8 @@ import android.app.Application
 import android.app.usage.UsageEvents
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.jaeyun.tally.data.usagestats.AppClassifier
+import com.jaeyun.tally.data.usagestats.AutoClassification
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,6 +32,8 @@ data class ProbeResult(
     val typeCounts: Map<Int, Int>,
     val samples: List<ScreenOnSample>,
     val stats: ScreenOnStats,
+    /** 조회 범위에서 RESUMED된 앱의 자동 분류(#11). 최근에 RESUMED된 순서 */
+    val classifications: List<AutoClassification>,
 ) {
     val latest: ProbeRow? get() = rows.lastOrNull()
 
@@ -53,6 +57,7 @@ private const val RESUME_QUERY_DELAY_MILLIS = 1_000L
 class UsageProbeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val reader = UsageEventReader(application)
+    private val classifier = AppClassifier(application)
     private val selfPackage = application.packageName
 
     private val _uiState = MutableStateFlow(ProbeUiState())
@@ -113,6 +118,11 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
             )
         }
         val samples = ScreenOnAnalyzer.analyze(events, endAt)
+        val resumedPackages = events
+            .filter { it.type == UsageEvents.Event.ACTIVITY_RESUMED }
+            .map { it.packageName }
+            .asReversed()
+            .distinct()
         return ProbeResult(
             beginAt = beginAt,
             endAt = endAt,
@@ -121,6 +131,7 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
             typeCounts = events.groupingBy { it.type }.eachCount(),
             samples = samples,
             stats = ScreenOnAnalyzer.stats(samples),
+            classifications = classifier.classifyAll(resumedPackages),
         )
     }
 }

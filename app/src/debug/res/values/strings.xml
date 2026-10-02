@@ -32,6 +32,20 @@
     <string name="probe_sample_none">→ 이후 이벤트 없음 %1$s</string>
     <string name="probe_sample_keyguard">잠금 해제 %1$s</string>
 
+    <string name="probe_section_classification">자동 분류 (조회 범위에서 RESUMED된 앱, 최근순)</string>
+    <!-- 앱 이름 — 딴짓/허용 (근거) 패키지 -->
+    <string name="probe_classification_row">%1$s — %2$s (%3$s) %4$s</string>
+    <string name="probe_category_distract">딴짓</string>
+    <string name="probe_category_allowed">허용</string>
+    <string name="probe_reason_self">본 앱</string>
+    <string name="probe_reason_launcher">기본 홈 앱</string>
+    <string name="probe_reason_study">공부 앱</string>
+    <string name="probe_reason_browser">브라우저</string>
+    <string name="probe_reason_phone">전화</string>
+    <string name="probe_reason_category">카테고리 SNS·영상·게임</string>
+    <string name="probe_reason_system">시스템 앱</string>
+    <string name="probe_reason_installed">설치한 앱 기본값</string>
+
     <string name="probe_section_events">이벤트 %1$d개 (최신순)</string>
     <string name="probe_section_events_dump">이벤트 %1$d개 (시각순)</string>
     <string name="probe_tag_launcher">런처</string>

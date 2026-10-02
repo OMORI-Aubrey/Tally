@@ -3,6 +3,9 @@ package com.jaeyun.tally.probe
 import android.app.usage.UsageEvents
 import android.content.res.Resources
 import com.jaeyun.tally.R
+import com.jaeyun.tally.data.usagestats.AutoCategoryReason
+import com.jaeyun.tally.data.usagestats.AutoClassification
+import com.jaeyun.tally.domain.model.Category
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -93,6 +96,25 @@ internal object ProbeText {
         return "${row.label} (${row.event.packageName})$tags"
     }
 
+    fun classification(res: Resources, item: AutoClassification): String = res.getString(
+        R.string.probe_classification_row,
+        item.appLabel,
+        res.getString(if (item.category == Category.DISTRACT) R.string.probe_category_distract else R.string.probe_category_allowed),
+        res.getString(
+            when (item.reason) {
+                AutoCategoryReason.SELF -> R.string.probe_reason_self
+                AutoCategoryReason.LAUNCHER -> R.string.probe_reason_launcher
+                AutoCategoryReason.STUDY_APP -> R.string.probe_reason_study
+                AutoCategoryReason.BROWSER -> R.string.probe_reason_browser
+                AutoCategoryReason.PHONE -> R.string.probe_reason_phone
+                AutoCategoryReason.DISTRACT_CATEGORY -> R.string.probe_reason_category
+                AutoCategoryReason.SYSTEM -> R.string.probe_reason_system
+                AutoCategoryReason.INSTALLED -> R.string.probe_reason_installed
+            },
+        ),
+        item.packageName,
+    )
+
     fun dump(res: Resources, result: ProbeResult): String = buildString {
         appendLine("[${res.getString(R.string.probe_title)}]")
         appendLine(range(res, result))
@@ -103,6 +125,9 @@ internal object ProbeText {
         appendLine("## ${res.getString(R.string.probe_section_screen_on)}")
         statsLines(res, result.stats).forEach(::appendLine)
         result.samples.forEach { appendLine(sample(res, it, result.labels)) }
+        appendLine()
+        appendLine("## ${res.getString(R.string.probe_section_classification)}")
+        result.classifications.forEach { appendLine(classification(res, it)) }
         appendLine()
         appendLine("## ${res.getString(R.string.probe_section_events_dump, result.rows.size)}")
         result.rows.forEach { appendLine("${eventTitle(it)}  ${eventDetail(res, it)}") }
