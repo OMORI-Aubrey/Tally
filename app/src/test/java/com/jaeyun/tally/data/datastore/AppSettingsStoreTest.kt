@@ -56,6 +56,16 @@ class AppSettingsStoreTest {
     }
 
     @Test
+    fun `체감을 물은 세션 시각을 남기고 지울 수 있다`() = runTest {
+        val store = store()
+        store.setPerceivedAskedAt(1_000)
+        assertEquals(1_000L, store.settings.first().perceivedAskedAt)
+
+        store.setPerceivedAskedAt(null)
+        assertNull(store.settings.first().perceivedAskedAt)
+    }
+
+    @Test
     fun `과목 숨기기와 되돌리기`() = runTest {
         val store = store()
         store.setSubjectHidden("수햑", hidden = true)
