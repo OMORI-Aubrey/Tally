@@ -1,0 +1,121 @@
+package com.jaeyun.tally.ui.screens.records
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.HighlightedText
+import com.jaeyun.tally.ui.components.NotebookPaper
+import com.jaeyun.tally.ui.components.SessionListItem
+import com.jaeyun.tally.ui.components.sessionDurationText
+import com.jaeyun.tally.ui.theme.PencilSoft
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
+
+/**
+ * 기록 탭 (§8.4). P1에서는 날짜별 세션 목록만 있다. 판정·이번 주·누적 섹션은 P6·P7에서 목록 위에 붙는다.
+ * 세션이 하나도 없으면 섹션 없이 안내 한 줄만 둔다(§8.5.1).
+ */
+@Composable
+fun RecordsScreen(
+    modifier: Modifier = Modifier,
+    viewModel: RecordsViewModel = viewModel(factory = RecordsViewModel.Factory),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    when (val state = uiState) {
+        RecordsUiState.Loading -> Box(modifier.fillMaxSize())
+        RecordsUiState.Empty -> RecordsEmpty(modifier)
+        is RecordsUiState.Content -> SessionList(state, modifier)
+    }
+}
+
+@Composable
+private fun RecordsEmpty(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(start = NotebookPaper.ContentStart, end = 24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.records_empty),
+            style = MaterialTheme.typography.bodyLarge,
+            color = PencilSoft,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
+
+@Composable
+private fun SessionList(state: RecordsUiState.Content, modifier: Modifier = Modifier) {
+    // TODO(#15) 세션을 누르면 세션 리포트로
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = NotebookPaper.ContentStart, end = 24.dp, top = 24.dp, bottom = 24.dp),
+    ) {
+        item {
+            // 오른쪽 값이 무엇인지 여기서 한 번만 밝힌다. 줄마다 "착석"을 반복하지 않는다
+            Row(Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.records_sessions_title),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = PencilSoft,
+                    modifier = Modifier.weight(1f),
+                )
+                // TODO(P2) 지표를 계산한 세션이 생기면 순공 최대로 바꾼다
+                Text(stringResource(R.string.records_sitting_column), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
+            }
+        }
+        state.days.forEach { day ->
+            item(key = day.date.toEpochDay()) {
+                HighlightedText(
+                    text = dayLabel(day.date, state.today),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 4.dp),
+                )
+            }
+            items(day.sessions, key = { it.id }) { row ->
+                SessionListItem(
+                    startTime = row.startTime.format(TimeFormat),
+                    subjectName = row.subjectName,
+                    // TODO(P2) 지표를 계산한 세션은 순공 최대·집중 밀도로 바꾼다(§8.4 세션 목록)
+                    summary = sessionDurationText(row.sessionSec.toLong()),
+                    excludedFromStats = !row.validForStats,
+                )
+            }
+        }
+    }
+}
+
+/** `오늘`, `어제`, 그 밖에는 `9월 28일 (월)` */
+@Composable
+private fun dayLabel(date: LocalDate, today: LocalDate): String = when (date) {
+    today -> stringResource(R.string.records_today)
+    today.minusDays(1) -> stringResource(R.string.records_yesterday)
+    else -> stringResource(
+        R.string.records_date,
+        date.monthValue,
+        date.dayOfMonth,
+        date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.KOREAN),
+    )
+}

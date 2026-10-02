@@ -68,7 +68,6 @@
     <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
     <string name="placeholder_counter">%1$d번 눌렀어요</string>
-    <string name="placeholder_open_report">세션 리포트 열기</string>
     <string name="placeholder_open_app_classification">앱 분류 열기</string>
     <string name="placeholder_next">다음</string>
     <string name="placeholder_close">닫기</string>

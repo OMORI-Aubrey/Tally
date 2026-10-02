@@ -31,6 +31,10 @@ interface StudySessionDao {
     @Query("SELECT * FROM StudySession WHERE endAt IS NULL ORDER BY startAt DESC LIMIT 1")
     fun observeUnfinished(): Flow<StudySession?>
 
+    /** 끝난 세션 전체. 최근에 시작한 순서 (기록 탭 세션 목록) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC")
+    fun observeFinished(): Flow<List<StudySession>>
+
     // 과목 (§8.1.1). 과목은 세션의 라벨 문자열이라 별도 테이블 없이 세션에서 모은다
 
     /** 세션에 쓰인 과목별 세션 수와 마지막 세션 시각. 정렬은 저장소가 추가만 한 과목과 합친 뒤에 한다 */
