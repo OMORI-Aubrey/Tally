@@ -7,7 +7,8 @@
 | 항목 | 날짜 |
 |---|---|
 | P0 Go/No-Go — **Go** (삼성 One UI 실기기, #1 프로브) | 2026-09-30 |
-| P2 완료 (자기 사용 개시) | — |
+| 자기 사용 개시 — 세션 종료 시 지표 저장 시작 (#12) | 2026-10-02 |
+| P2 완료 | — |
 | P7 완료 (기능 동결) | — |
 
 ## 1. 진행 원칙
@@ -106,7 +107,7 @@
    - `UsageEvents` → `RawEvent` 매핑(4종: `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN`), AppOps 권한 확인
    - 자동 분류는 기본 딴짓(§4): 본 앱·기본 홈·공부 앱 목록·시스템 앱만 허용. 브라우저·전화·`ApplicationInfo.category` SNS·영상·게임은 시스템 앱이어도 딴짓
    - 매니페스트 `<queries>`에 HOME / 브라우저 VIEW 인텐트 추가. 홈은 기본 홈 앱만(설정 앱도 HOME에 응답), 전화는 `TelecomManager`의 기본·시스템 전화 앱과 통화 화면(`*.incallui`)만 본다(`ACTION_DIAL`에는 줌도 응답 — 강의 앱을 딴짓으로 오분류)
-4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션). 복원 불변식이 깨지면 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`
+4. **#12 [feat] 세션 종료 파이프라인** — `data/repository`: 이벤트 조회 → 새 패키지를 `AppClassification(AUTO_CATEGORY)`로 upsert → 복원 → 지표 → `StudySession` 갱신 + `AppSegment` 저장(한 트랜잭션). 복원 불변식이 깨지면 debug 빌드는 예외, release 빌드는 로그를 남기고 `isValidForStats = false`. 사용 기록 조회·자동 분류는 트랜잭션 밖에서 하고, 저장 직전에 진행 중인지 다시 확인한다. 자동 분류(`AUTO_CATEGORY`) 행은 세션마다 지금 규칙으로 갱신하고(규칙·앱 이름 변경 반영), 사용자 분류(`USER`)는 건드리지 않는다. 권한이 없으면 `hasTimeline = false`, `metricsVersion = NOT_COMPUTED`
 5. **#13 [feat] IDLE 주간 요약 줄** — `이번 주 최장 N분 · 평균 N분 ›`. 이번 주 세션이 없으면 `첫 세션을 시작해보세요`
 - 단위 테스트: §14.2 타임라인 13개 케이스(KEYGUARD_HIDDEN 2건, 화면 켜짐 흡수 10초 1건 포함). 모든 케이스의 마지막 줄에 `assertInvariant`. 지표 계산
 - 실기기: §14.1 시나리오 3종 간이 확인(정식 실험은 평가 기간에). **자기 사용 개시일을 진행 기록에 적는다**
