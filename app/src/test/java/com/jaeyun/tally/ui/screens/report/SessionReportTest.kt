@@ -149,6 +149,8 @@ class SessionReportTest {
         assertEquals(listOf(LocalTime.of(19, 24), LocalTime.of(19, 51), LocalTime.of(19, 52)), distractions.map { it.startTime })
         // 분류표에 이름이 없으면 패키지 이름을 쓴다
         assertEquals(listOf("인스타그램", null, YOUTUBE), distractions.map { it.appLabel })
+        // 화면 켜짐은 앱이 아니라 재분류할 수 없다
+        assertEquals(listOf(INSTA, null, YOUTUBE), distractions.map { it.packageName })
         assertEquals(listOf(180, 60, 300), distractions.map { it.durationSec })
     }
 

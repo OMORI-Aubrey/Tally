@@ -66,6 +66,9 @@
     <string name="card_length">세션 길이</string>
     <string name="report_distractions_title">딴짓한 순간</string>
     <string name="distraction_screen_on">화면 켜짐 (앱 없음)</string>
+    <!-- 이탈 목록을 길게 누르면 뜨는 메뉴 (#16) -->
+    <string name="report_distractions_hint">길게 눌러 고치기</string>
+    <string name="distraction_allow">허용 앱으로 바꾸기</string>
     <!-- "카카오톡"은 어떤 앱인가요? (조사는 받침에 맞춰 코드에서 고른다) -->
     <string name="unclassified_question">\"%1$s\"%2$s 어떤 앱인가요?</string>
     <string name="unclassified_distract">딴짓</string>
