@@ -176,6 +176,60 @@ class SessionRepositoryTest {
     }
 
     @Test
+    fun 리포트에서_허용으로_바꾸면_그_세션을_다시_계산한다() = runTest {
+        val id = repository.start(subjectName = null, now = 0)
+        usageEvents.result = UsageQueryResult.Events(listOf(resumed(10 * MIN, YOUTUBE), resumed(15 * MIN, SELF)))
+        repository.finish(id, now = 30 * MIN)
+
+        val result = repository.reclassify(id, YOUTUBE, Category.ALLOWED)
+
+        assertEquals(ReclassifyResult.RECOMPUTED, result)
+        val session = db.studySessionDao().getById(id)!!
+        assertEquals(0, session.interruptionCount)
+        assertEquals(30 * 60, session.lfsSec)
+        assertEquals(listOf(Category.ALLOWED), db.appSegmentDao().getBySession(id).map { it.category })
+        assertEquals(ClassificationSource.USER, db.appClassificationDao().get(YOUTUBE)?.source)
+    }
+
+    @Test
+    fun 사용_기록이_지워졌으면_분류만_저장하고_다시_계산하지_않는다() = runTest {
+        val id = repository.start(subjectName = null, now = 0)
+        usageEvents.result = UsageQueryResult.Events(listOf(resumed(10 * MIN, YOUTUBE), resumed(15 * MIN, SELF)))
+        repository.finish(id, now = 30 * MIN)
+        usageEvents.result = UsageQueryResult.Events(emptyList())
+
+        val result = repository.reclassify(id, YOUTUBE, Category.ALLOWED)
+
+        assertEquals(ReclassifyResult.SAVED_ONLY, result)
+        assertEquals(1, db.studySessionDao().getById(id)?.interruptionCount)
+        assertEquals(Category.ALLOWED, db.appClassificationDao().get(YOUTUBE)?.category)
+    }
+
+    @Test
+    fun 분류가_그대로면_사용자_분류로_확정만_한다() = runTest {
+        val id = repository.start(subjectName = null, now = 0)
+        usageEvents.result = UsageQueryResult.Events(listOf(resumed(10 * MIN, YOUTUBE), resumed(15 * MIN, SELF)))
+        repository.finish(id, now = 30 * MIN)
+
+        assertEquals(ReclassifyResult.UNCHANGED, repository.reclassify(id, YOUTUBE, Category.DISTRACT))
+        assertEquals(ClassificationSource.USER, db.appClassificationDao().get(YOUTUBE)?.source)
+        assertEquals(1, db.studySessionDao().getById(id)?.interruptionCount)
+    }
+
+    @Test
+    fun 리포트_재료의_기록은_다른_세션에서_찾는다() = runTest {
+        val first = repository.start(subjectName = null, now = 0)
+        repository.finish(first, now = 20 * MIN)
+        val second = repository.start(subjectName = null, now = 30 * MIN)
+        repository.finish(second, now = 40 * MIN)
+
+        val report = repository.loadReport(second)!!
+
+        assertEquals(20 * 60, report.bestOtherLfsSec)
+        assertNull(repository.loadReport(9_999))
+    }
+
+    @Test
     fun 이미_끝난_세션을_다시_종료하면_바꾸지_않는다() = runTest {
         val id = repository.start(subjectName = null, now = 0)
         repository.finish(id, now = 10 * MIN)

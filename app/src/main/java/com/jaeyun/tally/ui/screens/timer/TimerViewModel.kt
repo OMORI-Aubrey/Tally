@@ -11,6 +11,7 @@ import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.repository.SubjectSummary
 import com.jaeyun.tally.data.room.StudySession
+import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.domain.model.SubjectName
 import com.jaeyun.tally.ui.components.WeeklySummary
 import com.jaeyun.tally.util.WeekRange
@@ -61,19 +62,13 @@ internal fun subjectChips(recent: List<String>, selected: String?, max: Int = MA
 }
 
 /**
- * 주 단위로 셀 세션: 통계에 들고 타임라인이 있다. 3분 미만 세션은 오조작이고(§6.3 #3), 사용 기록 권한 없이 끝낸 세션은
- * 실측 지표가 없다 (PLAN.md §4 주간 요약 줄의 숫자, 체감 질문 트리거)
- */
-internal val StudySession.countsForWeek: Boolean get() = isValidForStats && hasTimeline
-
-/**
- * 주간 요약 줄의 숫자 (§8.1). [week]에 시작한 세션 중 [countsForWeek] 세션의 최장 구간 최댓값과 평균.
+ * 주간 요약 줄의 숫자 (§8.1). [week]에 시작한 세션 중 [countsInStats] 세션의 최장 구간 최댓값과 평균.
  *
  * 셀 세션이 없으면 null이다. 화면은 숫자 대신 문장을 쓴다 — 최장 구간이 0초뿐인 주도 "0초"를 보이지 않게 null로 본다(§8.5.1).
  */
 internal fun weeklySummary(sessions: List<StudySession>, week: WeekRange): WeeklySummary? {
     val lfs = sessions
-        .filter { it.startAt in week && it.countsForWeek }
+        .filter { it.startAt in week && it.countsInStats }
         .map { it.lfsSec }
     val longest = lfs.maxOrNull()?.takeIf { it > 0 } ?: return null
     return WeeklySummary(longestSec = longest, averageSec = (lfs.sumOf { it.toLong() } / lfs.size).toInt())
@@ -81,7 +76,7 @@ internal fun weeklySummary(sessions: List<StudySession>, week: WeekRange): Weekl
 
 /**
  * 방금 끝낸 [session]에서 체감 집중 시간을 물을지 (§3.4). 주 1회만, 예측할 수 없게 묻는다.
- * - [countsForWeek] 세션만 후보다. 실측과 견줄 수 없는 세션에 그 주의 한 번을 쓰지 않는다
+ * - [countsInStats] 세션만 후보다. 실측과 견줄 수 없는 세션에 그 주의 한 번을 쓰지 않는다
  * - 이번 주에 이미 물었으면 묻지 않는다. 답했든 건너뛰었든 같다 (PLAN.md §4)
  * - 1/3 확률로 묻는다. 이번 주 3번째 후보 세션까지 한 번도 걸리지 않았으면 확정으로 묻는다
  *
@@ -95,10 +90,10 @@ internal fun shouldAskPerceived(
     week: WeekRange,
     random: Random,
 ): Boolean {
-    if (!session.countsForWeek) return false
+    if (!session.countsInStats) return false
     val askedThisWeek = (lastAskedAt != null && lastAskedAt in week) || weekSessions.any { it.perceivedFocusMin != null }
     if (askedThisWeek) return false
-    val weekSessionIndex = weekSessions.count { it.countsForWeek && it.startAt <= session.startAt }
+    val weekSessionIndex = weekSessions.count { it.countsInStats && it.startAt <= session.startAt }
     return random.nextInt(3) == 0 || weekSessionIndex >= 3
 }
 

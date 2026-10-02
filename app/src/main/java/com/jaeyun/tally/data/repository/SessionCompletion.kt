@@ -7,6 +7,16 @@ import com.jaeyun.tally.domain.metrics.MetricsVersion
 import com.jaeyun.tally.domain.metrics.SessionValidity
 import com.jaeyun.tally.domain.reconstructor.ReconstructedTimeline
 
+/**
+ * 다시 조회해 복원한 [timeline]이 저장된 구간([stored])과 같은지. 다르면 그사이 사용 기록이 지워졌거나 일부만 남았다고
+ * 보고 그 세션을 다시 계산하지 않는다(재분류, §5.1).
+ */
+internal fun sameTimeline(timeline: ReconstructedTimeline, stored: List<AppSegment>): Boolean =
+    timeline.segments.size == stored.size &&
+        timeline.segments.zip(stored).all { (a, b) ->
+            a.packageName == b.packageName && a.category == b.category && a.startAt == b.startAt && a.endAt == b.endAt
+        }
+
 /** 종료된 세션과 저장할 구간 */
 internal data class CompletedSession(val session: StudySession, val segments: List<AppSegment>)
 
