@@ -43,6 +43,30 @@ class TallyDatabaseTest {
     }
 
     @Test
+    fun 기간_조회는_그_기간에_시작해_끝난_세션만_시작_순서로_준다() = runTest {
+        val dao = db.studySessionDao()
+        dao.insert(session(startAt = 999, endAt = 1_500)) // 시작이 기간 전
+        val second = dao.insert(session(startAt = 1_800, endAt = 3_000)) // 끝이 기간 뒤여도 시작으로 본다
+        val first = dao.insert(session(startAt = 1_000, endAt = 1_200))
+        dao.insert(session(startAt = 1_900)) // 진행 중
+        dao.insert(session(startAt = 2_000, endAt = 2_100)) // 끝 경계는 다음 기간
+
+        assertEquals(listOf(first, second), dao.getFinishedStartedBetween(1_000, 2_000).map { it.id })
+    }
+
+    @Test
+    fun 체감_집중_시간을_적고_지운다() = runTest {
+        val dao = db.studySessionDao()
+        val id = dao.insert(session(startAt = 0, endAt = 60_000))
+
+        dao.setPerceivedFocus(id, 40)
+        assertEquals(40, dao.getById(id)?.perceivedFocusMin)
+
+        dao.setPerceivedFocus(id, null)
+        assertNull(dao.getById(id)?.perceivedFocusMin)
+    }
+
+    @Test
     fun 세션을_지우면_구간도_지워진다() = runTest {
         val sessionId = db.studySessionDao().insert(session(startAt = 0, endAt = 60_000))
         db.appSegmentDao().insertAll(

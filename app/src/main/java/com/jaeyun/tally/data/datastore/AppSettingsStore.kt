@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,11 @@ data class AppSettings(
     val addedSubjects: Map<String, Long> = emptyMap(),
     /** 기준선 활성 조건 완화(12 → 6세션). debug 빌드에서만 효과가 있다 (§5.3) */
     val relaxedBaseline: Boolean = false,
+    /**
+     * 체감 집중 시간을 마지막으로 물은 세션의 시작 시각. 그 세션이 속한 주에는 다시 묻지 않는다(§3.4).
+     * 건너뛰면 세션에 값이 남지 않아서 물었다는 사실을 따로 둔다 (PLAN.md §4)
+     */
+    val perceivedAskedAt: Long? = null,
 )
 
 /** 파일 하나당 인스턴스가 하나여야 하므로 `AppContainer`에서만 만든다 */
@@ -43,6 +49,7 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
                 hiddenSubjects = prefs[HIDDEN_SUBJECTS].orEmpty(),
                 addedSubjects = decodeAdded(prefs[ADDED_SUBJECTS].orEmpty()),
                 relaxedBaseline = prefs[RELAXED_BASELINE] ?: false,
+                perceivedAskedAt = prefs[PERCEIVED_ASKED_AT],
             )
         }
 
@@ -92,6 +99,13 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[RELAXED_BASELINE] = enabled }
     }
 
+    /** null이면 지운다 */
+    suspend fun setPerceivedAskedAt(sessionStartAt: Long?) {
+        dataStore.edit {
+            if (sessionStartAt == null) it.remove(PERCEIVED_ASKED_AT) else it[PERCEIVED_ASKED_AT] = sessionStartAt
+        }
+    }
+
     companion object {
         private const val FILE_NAME = "settings"
 
@@ -100,6 +114,7 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         private val HIDDEN_SUBJECTS = stringSetPreferencesKey("hiddenSubjects")
         private val RELAXED_BASELINE = booleanPreferencesKey("relaxedBaseline")
         private val ADDED_SUBJECTS = stringSetPreferencesKey("addedSubjects")
+        private val PERCEIVED_ASKED_AT = longPreferencesKey("perceivedAskedAt")
 
         // "추가시각\t이름"으로 저장한다. 과목 이름은 공백을 정리해 넣으므로 탭이 남지 않는다(SubjectName.normalize)
         private const val ADDED_SEPARATOR = '\t'

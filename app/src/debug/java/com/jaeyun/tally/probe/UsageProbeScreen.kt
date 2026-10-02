@@ -27,6 +27,7 @@ import com.jaeyun.tally.R
 import com.jaeyun.tally.domain.model.Category
 
 private val WINDOW_OPTIONS = listOf(5, 15, 30, 60)
+private val EXTEND_OPTIONS = listOf(10, 30, 60)
 
 @Composable
 fun UsageProbeScreen(
@@ -36,6 +37,8 @@ fun UsageProbeScreen(
     onTargetOnlyChange: (Boolean) -> Unit,
     onQuery: () -> Unit,
     onCopy: () -> Unit,
+    onClearPerceived: () -> Unit,
+    onExtendRunning: (minutes: Int) -> Unit,
 ) {
     val res = LocalResources.current
     Scaffold { innerPadding ->
@@ -68,6 +71,37 @@ fun UsageProbeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (segment.category == Category.DISTRACT) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
                     )
+                }
+            }
+
+            // 임시(#14): 긴 세션을 기다리지 않고 시험한다
+            item { SectionTitle(stringResource(R.string.probe_section_running)) }
+            val running = state.runningSession
+            if (running == null) {
+                item { SecondaryText(stringResource(R.string.probe_running_none)) }
+            } else {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        HighlightText(ProbeText.running(res, running, System.currentTimeMillis()))
+                        SecondaryText(stringResource(R.string.probe_running_hint))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            EXTEND_OPTIONS.forEach { minutes ->
+                                OutlinedButton(onClick = { onExtendRunning(minutes) }) {
+                                    Text(stringResource(R.string.probe_running_extend, minutes))
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            state.perceivedWeek?.let { perceived ->
+                item { SectionTitle(stringResource(R.string.probe_section_perceived)) }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ProbeText.perceivedLines(res, perceived).forEach { HighlightText(it) }
+                        OutlinedButton(onClick = onClearPerceived) { Text(stringResource(R.string.probe_perceived_clear)) }
+                    }
                 }
             }
 

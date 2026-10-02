@@ -15,7 +15,7 @@
 - 버전은 `gradle/libs.versions.toml`에서만 관리한다.
 - Room 스키마는 `app/schemas/`에 내보내지며 커밋 대상이다. 엔티티를 바꾸면 DB 버전을 올리고 마이그레이션을 작성한다.
 - `UsageStatsManager` 기능은 에뮬레이터로 검증할 수 없다. 실기기에서 확인한다 (§6.4).
-- 사용 기록 프로브(`app/src/debug/.../probe`, #1)는 debug 빌드 전용 진단 화면이며 기본 비활성이다. 원본 이벤트를 봐야 할 때만 `./gradlew installDebug -Ptally.probe=true`로 켠다(런처에 "Tally 프로브" 아이콘이 생긴다).
+- 사용 기록 프로브(`app/src/debug/.../probe`, #1)는 debug 빌드 전용 진단 화면이며 debug 빌드에서는 기본으로 켜진다(Android Studio 실행 버튼으로 설치해도 런처에 "Tally 프로브" 아이콘이 함께 생긴다). 끄려면 `-Ptally.probe=false`로 빌드한다. release 빌드에는 들어가지 않는다.
 
 ## 확정 스택 (§10.1)
 

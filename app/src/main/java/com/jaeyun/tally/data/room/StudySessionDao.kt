@@ -39,6 +39,14 @@ interface StudySessionDao {
     @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC")
     fun observeFinished(): Flow<List<StudySession>>
 
+    /** `[startAt, endAt)`에 시작해 끝난 세션. 시작한 순서 (체감 질문 트리거의 이번 주 세션) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL AND startAt >= :startAt AND startAt < :endAt ORDER BY startAt")
+    suspend fun getFinishedStartedBetween(startAt: Long, endAt: Long): List<StudySession>
+
+    /** 체감 집중 시간(분)을 적는다 (§3.4). null이면 지운다 */
+    @Query("UPDATE StudySession SET perceivedFocusMin = :minutes WHERE id = :id")
+    suspend fun setPerceivedFocus(id: Long, minutes: Int?)
+
     // 과목 (§8.1.1). 과목은 세션의 라벨 문자열이라 별도 테이블 없이 세션에서 모은다
 
     /** 세션에 쓰인 과목별 세션 수와 마지막 세션 시각. 정렬은 저장소가 추가만 한 과목과 합친 뒤에 한다 */

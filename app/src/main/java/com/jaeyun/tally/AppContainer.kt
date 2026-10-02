@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.jaeyun.tally.data.datastore.AppSettingsStore
+import com.jaeyun.tally.data.repository.PerceivedFocusRepository
 import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.room.TallyDatabase
@@ -35,6 +36,10 @@ class AppContainer(private val appContext: Context) {
     }
 
     val subjectRepository: SubjectRepository by lazy { SubjectRepository(database.studySessionDao(), settingsStore) }
+
+    val perceivedFocusRepository: PerceivedFocusRepository by lazy {
+        PerceivedFocusRepository(database.studySessionDao(), settingsStore)
+    }
 
     val usageEventSource: UsageEventSource by lazy { UsageEventSource(appContext) }
 

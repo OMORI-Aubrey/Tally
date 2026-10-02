@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jaeyun.tally.appContainer
+import com.jaeyun.tally.data.repository.PerceivedFocusRepository
 import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.repository.SubjectSummary
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.ZoneId
+import kotlin.random.Random
 
 sealed interface TimerUiState {
     /** 진행 중 세션을 아직 확인하지 못했다. IDLE을 잠깐 보였다가 RUNNING으로 바뀌는 깜빡임을 막는다 */
@@ -59,18 +61,49 @@ internal fun subjectChips(recent: List<String>, selected: String?, max: Int = MA
 }
 
 /**
- * 주간 요약 줄의 숫자 (§8.1). [week]에 시작한 세션 중 통계에 들고 타임라인이 있는 세션의 최장 구간 최댓값과 평균.
- * 3분 미만 세션은 오조작이고(§6.3 #3), 사용 기록 권한 없이 끝낸 세션은 최장 구간이 없어 세지 않는다.
+ * 주 단위로 셀 세션: 통계에 들고 타임라인이 있다. 3분 미만 세션은 오조작이고(§6.3 #3), 사용 기록 권한 없이 끝낸 세션은
+ * 실측 지표가 없다 (PLAN.md §4 주간 요약 줄의 숫자, 체감 질문 트리거)
+ */
+internal val StudySession.countsForWeek: Boolean get() = isValidForStats && hasTimeline
+
+/**
+ * 주간 요약 줄의 숫자 (§8.1). [week]에 시작한 세션 중 [countsForWeek] 세션의 최장 구간 최댓값과 평균.
  *
  * 셀 세션이 없으면 null이다. 화면은 숫자 대신 문장을 쓴다 — 최장 구간이 0초뿐인 주도 "0초"를 보이지 않게 null로 본다(§8.5.1).
  */
 internal fun weeklySummary(sessions: List<StudySession>, week: WeekRange): WeeklySummary? {
     val lfs = sessions
-        .filter { it.startAt in week && it.isValidForStats && it.hasTimeline }
+        .filter { it.startAt in week && it.countsForWeek }
         .map { it.lfsSec }
     val longest = lfs.maxOrNull()?.takeIf { it > 0 } ?: return null
     return WeeklySummary(longestSec = longest, averageSec = (lfs.sumOf { it.toLong() } / lfs.size).toInt())
 }
+
+/**
+ * 방금 끝낸 [session]에서 체감 집중 시간을 물을지 (§3.4). 주 1회만, 예측할 수 없게 묻는다.
+ * - [countsForWeek] 세션만 후보다. 실측과 견줄 수 없는 세션에 그 주의 한 번을 쓰지 않는다
+ * - 이번 주에 이미 물었으면 묻지 않는다. 답했든 건너뛰었든 같다 (PLAN.md §4)
+ * - 1/3 확률로 묻는다. 이번 주 3번째 후보 세션까지 한 번도 걸리지 않았으면 확정으로 묻는다
+ *
+ * @param weekSessions [session]이 시작한 주의 끝난 세션. [session]을 포함한다
+ * @param lastAskedAt 마지막으로 물은 세션의 시작 시각
+ */
+internal fun shouldAskPerceived(
+    session: StudySession,
+    weekSessions: List<StudySession>,
+    lastAskedAt: Long?,
+    week: WeekRange,
+    random: Random,
+): Boolean {
+    if (!session.countsForWeek) return false
+    val askedThisWeek = (lastAskedAt != null && lastAskedAt in week) || weekSessions.any { it.perceivedFocusMin != null }
+    if (askedThisWeek) return false
+    val weekSessionIndex = weekSessions.count { it.countsForWeek && it.startAt <= session.startAt }
+    return random.nextInt(3) == 0 || weekSessionIndex >= 3
+}
+
+/** 방금 끝낸 세션. [askPerceived]면 리포트 전에 체감 입력을 거친다 */
+data class FinishedSession(val sessionId: Long, val askPerceived: Boolean)
 
 /**
  * 타이머 탭 (§8.1, §8.5). 상태는 Room의 진행 중 세션 하나로 정해지므로, 앱을 강제 종료하거나 재부팅해도
@@ -80,12 +113,16 @@ internal fun weeklySummary(sessions: List<StudySession>, week: WeekRange): Weekl
  * 쓰지 않았어도 칩에 남는다.
  *
  * 주간 요약 줄의 "이번 주"는 상태를 새로 만들 때의 현재 시각으로 정한다. 화면을 떠났다 돌아오면 다시 정해진다.
+ *
+ * 세션을 끝내면 리포트 전에 체감 입력을 거칠지 정한다([shouldAskPerceived]).
  */
 class TimerViewModel(
     private val sessions: SessionRepository,
     private val subjects: SubjectRepository,
+    private val perceived: PerceivedFocusRepository,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val random: Random = Random.Default,
 ) : ViewModel() {
 
     private val selected = MutableStateFlow<String?>(null)
@@ -112,10 +149,10 @@ class TimerViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TimerUiState.Loading)
 
-    private val finished = Channel<Long>(Channel.BUFFERED)
+    private val finished = Channel<FinishedSession>(Channel.BUFFERED)
 
-    /** 방금 종료한 세션 id. 화면이 받아서 리포트로 이동한다 */
-    val finishedSessions: Flow<Long> = finished.receiveAsFlow()
+    /** 방금 종료한 세션. 화면이 받아서 체감 입력이나 리포트로 이동한다 */
+    val finishedSessions: Flow<FinishedSession> = finished.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -131,8 +168,23 @@ class TimerViewModel(
     fun finish() {
         val running = uiState.value as? TimerUiState.Running ?: return
         viewModelScope.launch {
-            sessions.finish(running.sessionId, now = clock())?.let { finished.send(it.id) }
+            val done = sessions.finish(running.sessionId, now = clock()) ?: return@launch
+            finished.send(FinishedSession(done.id, askPerceived = askPerceived(done)))
         }
+    }
+
+    /** 물기로 했으면 화면을 띄우기 전에 물었다고 적어 둔다 */
+    private suspend fun askPerceived(done: StudySession): Boolean {
+        val week = weekRangeOf(done.startAt, zone())
+        val ask = shouldAskPerceived(
+            session = done,
+            weekSessions = perceived.finishedStartedBetween(week.startAt, week.endAt),
+            lastAskedAt = perceived.lastAskedAt(),
+            week = week,
+            random = random,
+        )
+        if (ask) perceived.markAsked(done.startAt)
+        return ask
     }
 
     /** 칩·시트에서 고른다. 이미 고른 과목을 다시 누르면 선택을 푼다(과목 없이 시작) */
@@ -172,7 +224,9 @@ class TimerViewModel(
 
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { TimerViewModel(appContainer.sessionRepository, appContainer.subjectRepository) }
+            initializer {
+                TimerViewModel(appContainer.sessionRepository, appContainer.subjectRepository, appContainer.perceivedFocusRepository)
+            }
         }
     }
 }

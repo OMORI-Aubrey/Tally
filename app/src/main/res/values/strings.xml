@@ -9,7 +9,6 @@
     <!-- 화면 제목 -->
     <string name="title_onboarding">온보딩</string>
     <string name="title_app_classification">앱 분류</string>
-    <string name="title_perceived_input">체감 입력</string>
     <string name="title_session_report">세션 리포트</string>
 
     <!-- 타이머 -->
@@ -24,6 +23,19 @@
     <string name="weekly_summary_empty">첫 세션을 시작해보세요</string>
     <!-- 화면 낭독기: "두 번 탭하여 기록 보기" -->
     <string name="weekly_summary_open_records">기록 보기</string>
+
+    <!-- 체감 입력 (§3.4). 실측은 보여주지 않는다 -->
+    <string name="perceived_question_lead">방금 세션에서</string>
+    <string name="perceived_question">몇 분 정도 집중한 것 같나요?</string>
+    <string name="perceived_hours_label">집중한 것 같은 시간, 시간 칸</string>
+    <string name="perceived_minutes_label">집중한 것 같은 시간, 분 칸</string>
+    <!-- 2시간 30분까지 적을 수 있어요 -->
+    <string name="perceived_too_long">%1$s까지 적을 수 있어요</string>
+    <string name="perceived_minutes_over">분은 59까지 적을 수 있어요</string>
+    <string name="perceived_confirm">확인</string>
+    <string name="perceived_skip">건너뛰기</string>
+    <string name="hours_unit">시간</string>
+    <string name="minutes_unit">분</string>
 
     <!-- 과목 (§8.1.1) -->
     <string name="subject_chips_label">과목 선택</string>
@@ -76,7 +88,6 @@
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
     <string name="placeholder_counter">%1$d번 눌렀어요</string>
     <string name="placeholder_open_app_classification">앱 분류 열기</string>
-    <string name="placeholder_next">다음</string>
     <string name="placeholder_close">닫기</string>
     <string name="placeholder_finish_onboarding">시작하기</string>
 </resources>

@@ -49,6 +49,24 @@
     <string name="probe_pkg_screen_off">화면 꺼짐</string>
     <string name="probe_pkg_screen_on">화면 켜짐 (앱 없음)</string>
 
+    <string name="probe_last_session_perceived">체감 %1$d분</string>
+    <string name="probe_last_session_no_perceived">체감 입력 없음</string>
+
+    <!-- 임시(#14) -->
+    <string name="probe_section_running">진행 중 세션 (임시: 시간 더하기)</string>
+    <string name="probe_running_none">진행 중인 세션이 없어요. 타이머를 시작하고 오세요</string>
+    <!-- 시작 시각 · 경과 -->
+    <string name="probe_running">%1$s 시작 · 경과 %2$s</string>
+    <string name="probe_running_hint">시작 시각을 당겨 경과 시간을 늘린다. 당긴 구간의 실제 폰 사용도 세션에 들어가 지표는 실제와 다르다</string>
+    <string name="probe_running_extend">+%1$d분</string>
+
+    <string name="probe_section_perceived">체감 질문 (#14, 이번 주)</string>
+    <string name="probe_perceived_asked">이번 주에 물었음 — %1$s 시작 세션 (다시 묻지 않음)</string>
+    <string name="probe_perceived_answered_only">이번 주에 답한 세션이 있음 (다시 묻지 않음)</string>
+    <string name="probe_perceived_not_asked">이번 주에는 아직 안 물음 — 다음 후보 세션은 3분의 1 확률, 3번째부터 확정</string>
+    <string name="probe_perceived_counts">후보 세션 %1$d개 · 답한 세션 %2$d개 · 다음 후보 세션은 %3$d번째</string>
+    <string name="probe_perceived_clear">이번 주 체감 기록 지우기</string>
+
     <string name="probe_section_classification">자동 분류 (조회 범위에서 RESUMED된 앱, 최근순)</string>
     <!-- 앱 이름 — 딴짓/허용 (근거) 패키지 -->
     <string name="probe_classification_row">%1$s — %2$s (%3$s) %4$s</string>

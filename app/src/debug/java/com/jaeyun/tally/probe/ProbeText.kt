@@ -6,6 +6,7 @@ import com.jaeyun.tally.R
 import com.jaeyun.tally.data.usagestats.AutoCategoryReason
 import com.jaeyun.tally.data.usagestats.AutoClassification
 import com.jaeyun.tally.data.room.AppSegment
+import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
 import com.jaeyun.tally.util.formatElapsedClock
@@ -20,6 +21,7 @@ internal object ProbeText {
     private const val SELF_PACKAGE = "com.jaeyun.tally"
 
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
+    private val dateTimeFormatter = DateTimeFormatter.ofPattern("M/d HH:mm")
 
     private val countedTypes = listOf(
         UsageEvents.Event.ACTIVITY_RESUMED,
@@ -145,6 +147,10 @@ internal object ProbeText {
                 session.densityPct,
             ),
         )
+        add(
+            session.perceivedFocusMin?.let { res.getString(R.string.probe_last_session_perceived, it) }
+                ?: res.getString(R.string.probe_last_session_no_perceived),
+        )
         if (session.hasTimeline) {
             add(
                 if (info.covers) {
@@ -185,6 +191,31 @@ internal object ProbeText {
             name,
         )
     }
+
+    fun perceivedLines(res: Resources, info: PerceivedWeekInfo): List<String> = listOf(
+        if (info.askedThisWeek) {
+            val askedAt = info.lastAskedAt?.takeIf { it in info.week }
+            if (askedAt != null) {
+                res.getString(R.string.probe_perceived_asked, dateTime(askedAt))
+            } else {
+                res.getString(R.string.probe_perceived_answered_only)
+            }
+        } else {
+            res.getString(R.string.probe_perceived_not_asked)
+        },
+        res.getString(R.string.probe_perceived_counts, info.candidates, info.answered, info.candidates + 1),
+    )
+
+    fun running(res: Resources, session: StudySession, now: Long): String =
+        res.getString(R.string.probe_running, dateTime(session.startAt), formatElapsedClock(now - session.startAt))
+
+    fun perceivedDump(res: Resources, info: PerceivedWeekInfo): String = buildString {
+        appendLine("## ${res.getString(R.string.probe_section_perceived)}")
+        perceivedLines(res, info).forEach(::appendLine)
+    }
+
+    private fun dateTime(epochMillis: Long): String =
+        Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).format(dateTimeFormatter)
 
     fun lastSessionDump(res: Resources, info: LastSessionInfo): String = buildString {
         appendLine("## ${res.getString(R.string.probe_section_last_session)}")
