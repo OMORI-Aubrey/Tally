@@ -1,5 +1,6 @@
 package com.jaeyun.tally.ui.screens.records
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,9 +34,12 @@ import java.util.Locale
 /**
  * 기록 탭 (§8.4). P1에서는 날짜별 세션 목록만 있다. 판정·이번 주·누적 섹션은 P6·P7에서 목록 위에 붙는다.
  * 세션이 하나도 없으면 섹션 없이 안내 한 줄만 둔다(§8.5.1).
+ *
+ * @param onOpenSession 세션 목록 한 줄을 눌렀다. 그 세션의 리포트를 연다
  */
 @Composable
 fun RecordsScreen(
+    onOpenSession: (sessionId: Long) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecordsViewModel = viewModel(factory = RecordsViewModel.Factory),
 ) {
@@ -43,7 +47,7 @@ fun RecordsScreen(
     when (val state = uiState) {
         RecordsUiState.Loading -> Box(modifier.fillMaxSize())
         RecordsUiState.Empty -> RecordsEmpty(modifier)
-        is RecordsUiState.Content -> SessionList(state, modifier)
+        is RecordsUiState.Content -> SessionList(state, onOpenSession, modifier)
     }
 }
 
@@ -67,14 +71,13 @@ private fun RecordsEmpty(modifier: Modifier = Modifier) {
 private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 
 @Composable
-private fun SessionList(state: RecordsUiState.Content, modifier: Modifier = Modifier) {
-    // TODO(#15) 세션을 누르면 세션 리포트로
+private fun SessionList(state: RecordsUiState.Content, onOpenSession: (Long) -> Unit, modifier: Modifier = Modifier) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = NotebookPaper.ContentStart, end = 24.dp, top = 24.dp, bottom = 24.dp),
     ) {
         item {
-            // 오른쪽 값이 무엇인지 여기서 한 번만 밝힌다. 줄마다 "착석"을 반복하지 않는다
+            // 오른쪽 값이 무엇인지 여기서 한 번만 밝힌다. 줄마다 "공부"를 반복하지 않는다
             Row(Modifier.fillMaxWidth()) {
                 Text(
                     text = stringResource(R.string.records_sessions_title),
@@ -101,6 +104,7 @@ private fun SessionList(state: RecordsUiState.Content, modifier: Modifier = Modi
                     // TODO(P2) 지표를 계산한 세션은 순공 최대·집중 밀도로 바꾼다(§8.4 세션 목록)
                     summary = sessionDurationText(row.sessionSec.toLong()),
                     excludedFromStats = !row.validForStats,
+                    modifier = Modifier.clickable(onClickLabel = stringResource(R.string.records_open_report)) { onOpenSession(row.id) },
                 )
             }
         }

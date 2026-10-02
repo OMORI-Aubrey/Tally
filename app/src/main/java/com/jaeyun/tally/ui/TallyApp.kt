@@ -112,7 +112,7 @@ private fun TallyNavHost(
             )
         }
         composable<Records> {
-            RecordsScreen()
+            RecordsScreen(onOpenSession = { navController.navigate(SessionReport(it)) })
         }
         composable<Settings> {
             PlaceholderScreen(
