@@ -25,13 +25,14 @@ sealed interface SessionReportUiState {
     data class Ready(val report: SessionReport, val notice: ReclassifyNotice? = null) : SessionReportUiState
 }
 
-/** 미분류 앱 질문에 답한 뒤 남기는 한 줄 */
+/** 앱 분류를 정한 뒤(미분류 앱 질문, 이탈 목록 길게 누르기) 남기는 한 줄 */
 data class ReclassifyNotice(val appLabel: String, val category: Category, val result: ReclassifyResult)
 
 /**
  * 세션 리포트 (§8.2). 종료 직후(체감 입력을 거쳤을 수도 있다)와 기록 탭 세션 목록에서 연다.
  *
- * 미분류 앱 질문에 답하면 분류를 저장하고, 분류가 바뀌었으면 이 세션을 다시 계산한 뒤 리포트를 다시 읽는다.
+ * 미분류 앱 질문에 답하거나 이탈 목록에서 허용으로 바꾸면(#16) 분류를 저장하고, 분류가 바뀌었으면 이 세션을 다시 계산한 뒤
+ * 리포트를 다시 읽는다.
  */
 class SessionReportViewModel(
     private val sessionId: Long,
@@ -49,12 +50,12 @@ class SessionReportViewModel(
         viewModelScope.launch { _uiState.value = load(notice = null) }
     }
 
-    fun answer(app: UnclassifiedApp, category: Category) {
+    fun reclassify(packageName: String, appLabel: String, category: Category) {
         if (answering) return
         answering = true
         viewModelScope.launch {
-            val result = sessions.reclassify(sessionId, app.packageName, category)
-            _uiState.value = load(ReclassifyNotice(app.appLabel, category, result))
+            val result = sessions.reclassify(sessionId, packageName, category)
+            _uiState.value = load(ReclassifyNotice(appLabel, category, result))
             answering = false
         }
     }

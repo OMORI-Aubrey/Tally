@@ -65,8 +65,11 @@ data class Totals(val focusSec: Int?, val sittingSec: Int, val distractSec: Int?
 /** 지표 카드. 밀도가 0%로 떨어지면(세션 내내 딴짓) 0을 보이지 않도록 [densityPct]가 null */
 data class MetricCards(val densityPct: Int?, val lengthSec: Int)
 
-/** 이탈 한 번. [appLabel]이 null이면 화면만 켜고 앱은 열지 않은 구간이다(`화면 켜짐 (앱 없음)`) */
-data class Distraction(val startTime: LocalTime, val appLabel: String?, val durationSec: Int)
+/**
+ * 이탈 한 번. [packageName]·[appLabel]이 null이면 화면만 켜고 앱은 열지 않은 구간이다(`화면 켜짐 (앱 없음)`).
+ * 앱이 아니라 재분류할 수 없다
+ */
+data class Distraction(val startTime: LocalTime, val packageName: String?, val appLabel: String?, val durationSec: Int)
 
 data class UnclassifiedApp(val packageName: String, val appLabel: String)
 
@@ -123,13 +126,11 @@ internal fun buildSessionReport(data: SessionReportData, zone: ZoneId): SessionR
 
     val distractSegments = data.segments.filter { it.category == Category.DISTRACT }
     val distractions = distractSegments.map { segment ->
+        val app = segment.packageName.takeIf { it != PseudoPackage.SCREEN_ON_UNKNOWN }
         Distraction(
             startTime = Instant.ofEpochMilli(segment.startAt).atZone(zone).toLocalTime(),
-            appLabel = if (segment.packageName == PseudoPackage.SCREEN_ON_UNKNOWN) {
-                null
-            } else {
-                data.classifications[segment.packageName]?.appLabel ?: segment.packageName
-            },
+            packageName = app,
+            appLabel = app?.let { data.classifications[it]?.appLabel ?: it },
             durationSec = ((segment.endAt - segment.startAt) / 1000).toInt(),
         )
     }

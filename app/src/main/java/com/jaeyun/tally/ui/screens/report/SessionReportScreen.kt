@@ -46,6 +46,7 @@ import java.time.format.DateTimeFormatter
 /**
  * 세션 리포트 (§8.2, 와이어프레임 §4). 위에서부터 ⓪ 격차 → ① 구조 헤드라인 → ③ 총량 → ④ 지표 카드 → ⑤ 이탈 목록 →
  * ⑥ 미분류 앱 질문 → ⑦ 메타. 무게중심은 ⓪과 ①이고 나머지는 스크롤해서 본다. ⓪이 없으면 ①이 맨 위가 된다.
+ * 이탈 목록의 앱은 길게 눌러 허용으로 바꿀 수 있고(#16), 바꾸면 이 세션을 다시 계산한다(§5.1).
  * ② 타임라인 스트립은 #17에서 ①과 ③ 사이에 붙는다.
  *
  * 판정·목표는 주 단위라 이 화면에 두지 않는다. 문구는 원인을 단정하지 않는다(§5.5).
@@ -75,7 +76,7 @@ fun SessionReportScreen(
                 color = PencilSoft,
                 modifier = Modifier.padding(top = 24.dp),
             )
-            is SessionReportUiState.Ready -> ReportBody(state, onAnswer = viewModel::answer)
+            is SessionReportUiState.Ready -> ReportBody(state, onReclassify = viewModel::reclassify)
         }
     }
 }
@@ -109,7 +110,10 @@ private val TimeFormat = DateTimeFormatter.ofPattern("HH:mm")
 private val DateFormat = DateTimeFormatter.ofPattern("M/d")
 
 @Composable
-private fun ColumnScope.ReportBody(state: SessionReportUiState.Ready, onAnswer: (UnclassifiedApp, Category) -> Unit) {
+private fun ColumnScope.ReportBody(
+    state: SessionReportUiState.Ready,
+    onReclassify: (packageName: String, appLabel: String, category: Category) -> Unit,
+) {
     val report = state.report
 
     report.gap?.let { gap ->
@@ -164,9 +168,18 @@ private fun ColumnScope.ReportBody(state: SessionReportUiState.Ready, onAnswer: 
 
     if (report.distractions.isNotEmpty()) {
         Spacer(Modifier.height(32.dp))
-        NoteSectionTitle(stringResource(R.string.report_distractions_title))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+            NoteSectionTitle(stringResource(R.string.report_distractions_title))
+            Spacer(Modifier.weight(1f))
+            Text(stringResource(R.string.report_distractions_hint), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
+        }
         report.distractions.forEach { item ->
-            DistractionListItem(time = item.startTime.format(TimeFormat), appLabel = item.appLabel, durationSec = item.durationSec)
+            DistractionListItem(
+                time = item.startTime.format(TimeFormat),
+                appLabel = item.appLabel,
+                durationSec = item.durationSec,
+                onAllow = item.packageName?.let { pkg -> { onReclassify(pkg, item.appLabel ?: pkg, Category.ALLOWED) } },
+            )
         }
     }
 
@@ -174,7 +187,7 @@ private fun ColumnScope.ReportBody(state: SessionReportUiState.Ready, onAnswer: 
         Spacer(Modifier.height(24.dp))
         Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
             report.unclassified.forEach { app ->
-                UnclassifiedAppPrompt(appLabel = app.appLabel, onAnswer = { onAnswer(app, it) })
+                UnclassifiedAppPrompt(appLabel = app.appLabel, onAnswer = { onReclassify(app.packageName, app.appLabel, it) })
             }
             state.notice?.let { NoticeText(it) }
         }
