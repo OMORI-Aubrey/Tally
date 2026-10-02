@@ -31,6 +31,10 @@ interface StudySessionDao {
     @Query("SELECT * FROM StudySession WHERE endAt IS NULL ORDER BY startAt DESC LIMIT 1")
     fun observeUnfinished(): Flow<StudySession?>
 
+    /** 가장 최근에 끝난 세션 (debug 프로브의 마지막 세션 확인) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC LIMIT 1")
+    suspend fun getLatestFinished(): StudySession?
+
     /** 끝난 세션 전체. 최근에 시작한 순서 (기록 탭 세션 목록) */
     @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC")
     fun observeFinished(): Flow<List<StudySession>>

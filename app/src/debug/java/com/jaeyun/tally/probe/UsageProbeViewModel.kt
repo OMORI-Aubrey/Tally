@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.usage.UsageEvents
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.jaeyun.tally.TallyApplication
 import com.jaeyun.tally.data.usagestats.AppClassifier
 import com.jaeyun.tally.data.usagestats.AutoClassification
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +51,8 @@ data class ProbeUiState(
     val windowMinutes: Int = 15,
     val targetOnly: Boolean = true,
     val result: ProbeResult? = null,
+    /** 사용 기록 권한과 관계없이 DB에서 읽는다 */
+    val lastSession: LastSessionInfo? = null,
 )
 
 private const val RESUME_QUERY_DELAY_MILLIS = 1_000L
@@ -72,6 +75,7 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
     fun refresh() {
         val granted = reader.hasPermission()
         _uiState.update { it.copy(permissionGranted = granted) }
+        loadLastSession()
         if (granted) query(delayMillis = RESUME_QUERY_DELAY_MILLIS)
     }
 
@@ -95,10 +99,21 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
+    private fun loadLastSession() {
+        viewModelScope.launch {
+            val container = getApplication<TallyApplication>().container
+            val info = withContext(Dispatchers.IO) { loadLastSession(container) }
+            _uiState.update { it.copy(lastSession = info) }
+        }
+    }
+
     /** 결과 기록용 텍스트. 이벤트는 필터 없이 전부, 시각 오름차순으로 담는다 */
     fun dumpText(): String {
-        val result = _uiState.value.result ?: return ""
-        return ProbeText.dump(getApplication<Application>().resources, result)
+        val state = _uiState.value
+        val res = getApplication<Application>().resources
+        val lastSession = state.lastSession?.let { ProbeText.lastSessionDump(res, it) }.orEmpty()
+        val result = state.result?.let { ProbeText.dump(res, it) }.orEmpty()
+        return listOf(lastSession, result).filter { it.isNotEmpty() }.joinToString("\n")
     }
 
     private fun load(windowMinutes: Int): ProbeResult {

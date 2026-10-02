@@ -17,6 +17,12 @@ sealed interface UsageQueryResult {
     data class Events(val events: List<RawEvent>) : UsageQueryResult
 }
 
+/** 세션 구간의 사용 기록 조회. 세션 종료 파이프라인(#12)이 쓰고, 테스트에서는 가짜로 바꾼다 */
+interface UsageEventQuery {
+    /** `[beginAt, endAt]` 구간의 이벤트. 블로킹 호출이다 */
+    fun query(beginAt: Long, endAt: Long): UsageQueryResult
+}
+
 /** `UsageEvents.Event` 타입 → 복원에 쓰는 4종 (§6.1, PLAN.md §4). 나머지는 null */
 internal fun rawEventTypeOf(eventType: Int): RawEventType? = when (eventType) {
     UsageEvents.Event.ACTIVITY_RESUMED -> RawEventType.ACTIVITY_RESUMED
@@ -31,7 +37,7 @@ internal fun rawEventTypeOf(eventType: Int): RawEventType? = when (eventType) {
  *
  * [query]는 기기의 사용 기록을 읽는 블로킹 호출이라 IO 디스패처에서 부른다.
  */
-class UsageEventSource(private val context: Context) {
+class UsageEventSource(private val context: Context) : UsageEventQuery {
 
     private val usageStatsManager = context.getSystemService(UsageStatsManager::class.java)
     private val appOpsManager = context.getSystemService(AppOpsManager::class.java)
@@ -46,8 +52,8 @@ class UsageEventSource(private val context: Context) {
         context.packageName,
     ) == AppOpsManager.MODE_ALLOWED
 
-    /** `[beginAt, endAt]` 구간의 이벤트. `ACTIVITY_RESUMED`만 패키지 이름을 담는다 */
-    fun query(beginAt: Long, endAt: Long): UsageQueryResult {
+    /** `ACTIVITY_RESUMED`만 패키지 이름을 담는다 */
+    override fun query(beginAt: Long, endAt: Long): UsageQueryResult {
         if (!hasPermission()) return UsageQueryResult.NoPermission
         val usageEvents = try {
             usageStatsManager.queryEvents(beginAt, endAt)

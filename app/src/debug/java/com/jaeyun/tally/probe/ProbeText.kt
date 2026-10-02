@@ -5,13 +5,19 @@ import android.content.res.Resources
 import com.jaeyun.tally.R
 import com.jaeyun.tally.data.usagestats.AutoCategoryReason
 import com.jaeyun.tally.data.usagestats.AutoClassification
+import com.jaeyun.tally.data.room.AppSegment
 import com.jaeyun.tally.domain.model.Category
+import com.jaeyun.tally.domain.model.PseudoPackage
+import com.jaeyun.tally.util.formatElapsedClock
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /** 화면과 복사용 텍스트가 같은 문장을 쓰도록 모은다 */
 internal object ProbeText {
+
+    /** 본 앱 패키지. debug 빌드도 applicationIdSuffix를 쓰지 않는다 */
+    private const val SELF_PACKAGE = "com.jaeyun.tally"
 
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
 
@@ -114,6 +120,77 @@ internal object ProbeText {
         ),
         item.packageName,
     )
+
+    fun lastSessionLines(res: Resources, info: LastSessionInfo): List<String> = buildList {
+        val session = info.session
+        add(
+            res.getString(
+                R.string.probe_last_session_header,
+                time(session.startAt),
+                time(session.endAt ?: session.startAt),
+                formatElapsedClock(info.sessionMillis),
+                res.getString(if (session.hasTimeline) R.string.probe_timeline_yes else R.string.probe_timeline_no),
+                session.metricsVersion,
+                res.getString(if (session.isValidForStats) R.string.probe_stats_in else R.string.probe_stats_out),
+            ),
+        )
+        add(
+            res.getString(
+                R.string.probe_last_session_metrics,
+                formatElapsedClock(session.tTotalSec * 1000L),
+                formatElapsedClock(session.tFocusSec * 1000L),
+                formatElapsedClock(session.tDistSec * 1000L),
+                formatElapsedClock(session.lfsSec * 1000L),
+                session.interruptionCount,
+                session.densityPct,
+            ),
+        )
+        if (session.hasTimeline) {
+            add(
+                if (info.covers) {
+                    res.getString(R.string.probe_coverage_ok, info.segments.size, formatElapsedClock(info.coveredMillis))
+                } else {
+                    res.getString(
+                        R.string.probe_coverage_bad,
+                        info.segments.size,
+                        formatElapsedClock(info.coveredMillis),
+                        formatElapsedClock(info.sessionMillis),
+                    )
+                },
+            )
+        }
+    }
+
+    fun segment(res: Resources, segment: AppSegment, labels: Map<String, String>): String {
+        val name = when (segment.packageName) {
+            PseudoPackage.SCREEN_OFF -> res.getString(R.string.probe_pkg_screen_off)
+            PseudoPackage.SCREEN_ON_UNKNOWN -> res.getString(R.string.probe_pkg_screen_on)
+            SELF_PACKAGE -> res.getString(R.string.probe_tag_self)
+            else -> labels[segment.packageName] ?: segment.packageName
+        }
+        val category = res.getString(
+            when (segment.category) {
+                Category.DISTRACT -> R.string.probe_category_distract
+                Category.ALLOWED -> R.string.probe_category_allowed
+                Category.SCREEN_OFF -> R.string.probe_pkg_screen_off
+                Category.AWAY -> R.string.probe_category_away
+            },
+        )
+        return res.getString(
+            R.string.probe_segment_row,
+            time(segment.startAt),
+            time(segment.endAt),
+            formatElapsedClock(segment.endAt - segment.startAt),
+            category,
+            name,
+        )
+    }
+
+    fun lastSessionDump(res: Resources, info: LastSessionInfo): String = buildString {
+        appendLine("## ${res.getString(R.string.probe_section_last_session)}")
+        lastSessionLines(res, info).forEach(::appendLine)
+        info.segments.forEach { appendLine(segment(res, it, info.labels)) }
+    }
 
     fun dump(res: Resources, result: ProbeResult): String = buildString {
         appendLine("[${res.getString(R.string.probe_title)}]")

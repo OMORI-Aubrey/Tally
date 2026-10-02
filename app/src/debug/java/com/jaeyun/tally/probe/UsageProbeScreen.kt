@@ -52,6 +52,25 @@ fun UsageProbeScreen(
             item {
                 PermissionSection(granted = state.permissionGranted, onOpenSettings = onOpenSettings)
             }
+            item { SectionTitle(stringResource(R.string.probe_section_last_session)) }
+            val lastSession = state.lastSession
+            if (lastSession == null) {
+                item { SecondaryText(stringResource(R.string.probe_last_session_none)) }
+            } else {
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        ProbeText.lastSessionLines(res, lastSession).forEach { HighlightText(it) }
+                    }
+                }
+                items(lastSession.segments) { segment ->
+                    Text(
+                        text = ProbeText.segment(res, segment, lastSession.labels),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (segment.category == Category.DISTRACT) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
             if (!state.permissionGranted) return@LazyColumn
 
             item {
