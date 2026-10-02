@@ -16,6 +16,31 @@
     <string name="timer_start">시작</string>
     <string name="timer_finish">종료</string>
     <string name="timer_boundary_hint">과목이 바뀌면 끊어주세요</string>
+    <string name="timer_no_subject_hint">과목 없이도 시작할 수 있어요</string>
+
+    <!-- 과목 (§8.1.1) -->
+    <string name="subject_chips_label">과목 선택</string>
+    <string name="subject_add">과목 추가</string>
+    <string name="subject_add_short">+</string>
+    <string name="subject_add_optional">+ 과목 추가 (선택)</string>
+    <string name="subject_sheet_title">과목 선택</string>
+    <string name="subject_sheet_empty_title">아직 추가한 과목이 없어요</string>
+    <string name="subject_sheet_empty_body">과목을 나누면 나중에 기록을 찾기 쉬워져요</string>
+    <string name="subject_new_placeholder">새 과목 입력</string>
+    <string name="subject_new_confirm">추가</string>
+    <string name="subject_session_count">%1$d세션</string>
+    <string name="subject_hidden_badge">칩에서 숨김</string>
+    <string name="subject_menu">%1$s 더 보기</string>
+    <string name="subject_chip_menu">이름 바꾸기·숨기기</string>
+    <string name="subject_rename">이름 바꾸기</string>
+    <string name="subject_hide">칩에서 숨기기</string>
+    <string name="subject_unhide">다시 표시</string>
+    <string name="subject_rename_title">과목 이름 바꾸기</string>
+    <!-- "수햑"을 "수학"으로 바꾸면 … (조사는 받침에 맞춰 코드에서 고른다) -->
+    <string name="subject_rename_warning">\"%1$s\"%2$s \"%3$s\"%4$s 바꾸면 기존 세션 %5$d개도 함께 바뀌어요</string>
+    <string name="subject_rename_merge">이미 있는 \"%1$s\" 과목의 세션 %2$d개와 합쳐져요</string>
+    <string name="subject_rename_confirm">바꾸기</string>
+    <string name="cancel">취소</string>
 
     <!-- 빈 자리 화면(#5). 화면을 구현하면 쓰지 않게 된 것부터 지운다 -->
     <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
