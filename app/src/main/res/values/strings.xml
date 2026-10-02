@@ -37,6 +37,51 @@
     <string name="hours_unit">시간</string>
     <string name="minutes_unit">분</string>
 
+    <!-- 세션 리포트 (§8.2). 판정·목표는 쓰지 않고, 원인을 단정하지 않는다(§5.5) -->
+    <string name="report_title">세션 리포트</string>
+    <string name="report_close">닫기</string>
+    <string name="report_missing">세션을 찾을 수 없어요</string>
+    <!-- 순공은 늘 상한 추정이라 "최대"를 붙인다 (§5.4) -->
+    <string name="focus_max">최대 %1$s</string>
+    <string name="gap_perceived">체감</string>
+    <string name="gap_measured">실측</string>
+    <string name="gap_over">+%1$d%% 과대평가</string>
+    <string name="gap_under">-%1$d%% 과소평가</string>
+    <string name="gap_same">체감과 실측이 같아요</string>
+    <string name="gap_longest_lead">가장 길게 이어간 건</string>
+    <string name="structure_longest">최장</string>
+    <string name="structure_pieces_label">끊긴 결과</string>
+    <string name="structure_pieces">%1$d조각</string>
+    <string name="structure_no_interruption">이 세션에는 이탈이 없었어요</string>
+    <!-- 세션 1시간 38분 중 35% -->
+    <string name="structure_share">세션 %1$s 중 %2$d%%</string>
+    <string name="structure_record">기록 %1$s</string>
+    <string name="structure_new_record">기록 갱신</string>
+    <string name="totals_focus">순공</string>
+    <!-- 착석(T_total). 화면에서는 "공부"로 쓴다 (PLAN.md §4) -->
+    <string name="totals_sitting">공부 %1$s</string>
+    <string name="totals_sitting_distract">%1$s · 딴짓 %2$s</string>
+    <string name="report_no_timeline">이 세션은 사용 기록 없이 공부 시간만 남았어요</string>
+    <string name="card_density">집중 밀도</string>
+    <string name="card_density_value">%1$d%%</string>
+    <string name="card_length">세션 길이</string>
+    <string name="report_distractions_title">딴짓한 순간</string>
+    <string name="distraction_screen_on">화면 켜짐 (앱 없음)</string>
+    <!-- "카카오톡"은 어떤 앱인가요? (조사는 받침에 맞춰 코드에서 고른다) -->
+    <string name="unclassified_question">\"%1$s\"%2$s 어떤 앱인가요?</string>
+    <string name="unclassified_distract">딴짓</string>
+    <string name="unclassified_allowed">허용</string>
+    <!-- "카카오톡"을 허용 앱으로 … -->
+    <string name="reclassify_recomputed_allowed">\"%1$s\"%2$s 허용 앱으로 바꾸고 이 세션을 다시 계산했어요</string>
+    <string name="reclassify_recomputed_distract">\"%1$s\"%2$s 딴짓 앱으로 바꾸고 이 세션을 다시 계산했어요</string>
+    <string name="reclassify_saved_allowed">\"%1$s\"%2$s 허용 앱으로 정했어요</string>
+    <string name="reclassify_saved_distract">\"%1$s\"%2$s 딴짓 앱으로 정했어요</string>
+    <string name="reclassify_next_session">이 세션은 다시 계산할 수 없어 다음 세션부터 반영돼요</string>
+    <!-- 코틀린 · 9/7 19:00~20:38 -->
+    <string name="report_meta">%1$s · %2$s %3$s~%4$s</string>
+    <string name="report_meta_no_subject">%1$s %2$s~%3$s</string>
+    <string name="report_excluded">통계에 넣지 않는 세션이에요</string>
+
     <!-- 과목 (§8.1.1) -->
     <string name="subject_chips_label">과목 선택</string>
     <string name="subject_add">과목 추가</string>

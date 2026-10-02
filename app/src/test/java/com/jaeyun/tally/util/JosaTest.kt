@@ -21,7 +21,14 @@ class JosaTest {
     }
 
     @Test
+    fun `은는은 받침으로 고른다`() {
+        assertEquals("은", Josa.topicOf("카카오톡"))
+        assertEquals("는", Josa.topicOf("유튜브"))
+    }
+
+    @Test
     fun `한글이 아니면 둘을 함께 쓴다`() {
+        assertEquals("은(는)", Josa.topicOf("Instagram"))
         assertEquals("을(를)", Josa.objectOf("Java"))
         assertEquals("(으)로", Josa.directionOf("C++"))
         assertEquals("을(를)", Josa.objectOf(""))
