@@ -34,8 +34,8 @@ val Typography = Typography(
     headlineLarge = gaegu(FontWeight.Bold, 36, 48),    // L1: 최장 구간·조각 수·이탈 횟수, 선택한 과목
     headlineMedium = penScript(44, 64),                // 판정 문구 (BluePen)
     titleLarge = gaegu(FontWeight.Bold, 24, 32),       // L2: 순공·착석·딴짓, 지표 카드 값, 다음 목표
-    bodyLarge = gaegu(FontWeight.Normal, 24, 32),      // 본문: 목록 항목, 주간 요약 줄, 입력창
-    bodyMedium = penScript(26, 34),                    // L3: 메타, 근거, 라벨
+    bodyLarge = gaegu(FontWeight.Normal, 24, 32),      // 본문: 목록 항목, 입력창
+    bodyMedium = penScript(26, 34),                    // L3: 메타, 근거, 라벨, 주간 요약 줄
     labelLarge = gaegu(FontWeight.Bold, 24, 32),       // 버튼, 탭, 고른 칩, 목록의 과목 이름. bodyLarge와 같은 크기의 굵은 짝
     labelMedium = penScript(18, 24),                   // 캡션: 범례, 안내 문구, 섹션 제목
 
