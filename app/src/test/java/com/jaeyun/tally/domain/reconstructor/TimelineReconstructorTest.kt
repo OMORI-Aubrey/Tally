@@ -1,5 +1,6 @@
 package com.jaeyun.tally.domain.reconstructor
 
+import com.jaeyun.tally.domain.metrics.MetricsCalculator
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.Category.ALLOWED
 import com.jaeyun.tally.domain.model.Category.DISTRACT
@@ -44,18 +45,11 @@ private fun assertInvariant(segments: List<Segment>, start: Long, end: Long) {
     assertEquals(end - start, segments.sumOf { it.endAt - it.startAt })
 }
 
-// 지표 계산은 MetricsCalculator(#10)가 맡는다. 여기서는 §5.2 정의대로 구간에서 직접 센다
-private fun List<Segment>.interruptions(): Int = count { it.category == DISTRACT }
-private fun List<Segment>.distractMillis(): Long = filter { it.category == DISTRACT }.sumOf { it.durationMillis }
-private fun List<Segment>.longestFocusMillis(): Long {
-    var best = 0L
-    var run = 0L
-    for (segment in this) {
-        run = if (segment.category == DISTRACT) 0L else run + segment.durationMillis
-        best = maxOf(best, run)
-    }
-    return best
-}
+// 지표는 MetricsCalculator(§5.2)로 계산한다. 이 파일의 케이스는 모두 초 단위로 떨어진다
+private fun List<Segment>.metrics() = MetricsCalculator.calculate(this, first().startAt, last().endAt)
+private fun List<Segment>.interruptions(): Int = metrics().interruptionCount
+private fun List<Segment>.distractMillis(): Long = metrics().tDistSec * 1000L
+private fun List<Segment>.longestFocusMillis(): Long = metrics().lfsSec * 1000L
 
 class TimelineReconstructorTest {
 
