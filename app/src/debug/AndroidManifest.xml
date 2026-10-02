@@ -2,13 +2,7 @@
 <!-- debug 빌드 전용. P0 사용 기록 프로브 (#1). 릴리스 매니페스트에는 병합되지 않는다 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 이벤트 덤프에서 런처 패키지를 표시하기 위한 가시성 -->
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.MAIN" />
-            <category android:name="android.intent.category.HOME" />
-        </intent>
-    </queries>
+    <!-- 런처·브라우저·전화 앱 가시성은 main 매니페스트의 <queries>를 함께 쓴다 (#11) -->
 
     <application>
         <!--

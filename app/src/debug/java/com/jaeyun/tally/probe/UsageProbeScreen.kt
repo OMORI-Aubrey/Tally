@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
+import com.jaeyun.tally.domain.model.Category
 
 private val WINDOW_OPTIONS = listOf(5, 15, 30, 60)
 
@@ -88,6 +89,15 @@ fun UsageProbeScreen(
                 items(result.samples.asReversed()) { sample ->
                     BodyText(ProbeText.sample(res, sample, result.labels))
                 }
+            }
+
+            item { SectionTitle(stringResource(R.string.probe_section_classification)) }
+            items(result.classifications) { item ->
+                Text(
+                    text = ProbeText.classification(res, item),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (item.category == Category.DISTRACT) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                )
             }
 
             val rows = result.rows
