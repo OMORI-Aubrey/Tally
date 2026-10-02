@@ -9,7 +9,6 @@
     <!-- 화면 제목 -->
     <string name="title_onboarding">온보딩</string>
     <string name="title_app_classification">앱 분류</string>
-    <string name="title_session_report">세션 리포트</string>
 
     <!-- 타이머 -->
     <string name="timer_start">시작</string>
@@ -133,6 +132,5 @@
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
     <string name="placeholder_counter">%1$d번 눌렀어요</string>
     <string name="placeholder_open_app_classification">앱 분류 열기</string>
-    <string name="placeholder_close">닫기</string>
     <string name="placeholder_finish_onboarding">시작하기</string>
 </resources>

@@ -28,6 +28,7 @@ import com.jaeyun.tally.ui.screens.PlaceholderAction
 import com.jaeyun.tally.ui.screens.PlaceholderScreen
 import com.jaeyun.tally.ui.screens.perceived.PerceivedInputScreen
 import com.jaeyun.tally.ui.screens.records.RecordsScreen
+import com.jaeyun.tally.ui.screens.report.SessionReportScreen
 import com.jaeyun.tally.ui.screens.timer.TimerScreen
 import com.jaeyun.tally.ui.theme.TapeBlue
 import com.jaeyun.tally.ui.theme.TapeMint
@@ -79,7 +80,7 @@ private val TopLevelTab.color
         TopLevelTab.SETTINGS -> TapeMint
     }
 
-// TODO(#15~) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
+// TODO(#18 #19 #23) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
 
 @Composable
 private fun TallyNavHost(
@@ -130,13 +131,9 @@ private fun TallyNavHost(
             val sessionId = entry.toRoute<PerceivedInput>().sessionId
             PerceivedInputScreen(sessionId = sessionId, onDone = { navController.showReportAfterPerceivedInput(sessionId) })
         }
-        composable<SessionReport> {
-            PlaceholderScreen(
-                title = stringResource(R.string.title_session_report),
-                actions = listOf(
-                    PlaceholderAction(stringResource(R.string.placeholder_close)) { navController.popBackStack() },
-                ),
-            )
+        composable<SessionReport> { entry ->
+            val sessionId = entry.toRoute<SessionReport>().sessionId
+            SessionReportScreen(sessionId = sessionId, onClose = { navController.popBackStack() })
         }
     }
 }
