@@ -29,7 +29,7 @@ private val Default = Typography()
  * 손글씨 글꼴은 같은 크기에서 글자가 작게 보여 일반 글꼴보다 크게 잡았다. 실기기에서 조정한다.
  */
 val Typography = Typography(
-    displayLarge = gaegu(FontWeight.Bold, 72, 80),     // 타이머 RUNNING 경과 시간
+    displayLarge = gaegu(FontWeight.Bold, 84, 92),     // 타이머 RUNNING 경과 시간
     displayMedium = gaegu(FontWeight.Bold, 52, 64),    // L1 최대: 시작 버튼, 격차 포스트잇의 최장 구간
     headlineLarge = gaegu(FontWeight.Bold, 36, 48),    // L1: 최장 구간·조각 수·이탈 횟수, 선택한 과목
     headlineMedium = penScript(44, 64),                // 판정 문구 (BluePen)
