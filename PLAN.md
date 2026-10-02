@@ -62,7 +62,7 @@
 
    | 항목 | 확정값 | 근거 |
    |---|---|---|
-   | 지표 6개 정의 | 기획서 §5.2 그대로. 단 `AWAY` 구간은 `T_total`·`T_focus`에서 제외 | §5.2, §4 자리 비움 결정 |
+   | 지표 6개 정의 | 기획서 §5.2 그대로. 단 `AWAY` 구간은 `T_total`·`T_focus`에서 제외하고 `LFS` 연속도 끊는다(시간도 더하지 않음). 초 단위는 버림이며 저장값은 `T_focus = T_total − T_dist`로 맞춘다. 착석 0이면 밀도 0 | §5.2, §4 자리 비움 결정, #10 |
    | 구간 분류 | `DISTRACT` / `ALLOWED` / `SCREEN_OFF` / `AWAY` (Kotlin enum → Room TEXT) | §5.1, §4 |
    | 입력 이벤트 | `ACTIVITY_RESUMED`, `SCREEN_INTERACTIVE`, `SCREEN_NON_INTERACTIVE`, `KEYGUARD_HIDDEN` | §6.1, P0 실측 |
    | 짧은 구간 흡수 | 5초 미만. `__SCREEN_ON_UNKNOWN__`만 10초 미만 | §6.2.1, P0 잠금해제 14회 실측 |
@@ -178,6 +178,7 @@
 | 단계 | 결정 | 내용 | 이유 | 상태 |
 |---|---|---|---|---|
 | P0 | `[자리 비웠어요]` 구간 표현 | `AppSegment.category`에 `AWAY` 추가. 구간은 남기고 `T_total`·`T_focus`에서 뺀다 | 구간을 지우면 커버리지 불변식(§6.2)이 깨진다 | ✅ 확정 |
+| P2 | `AWAY`와 `LFS` | `AWAY`가 `LFS` 연속을 끊는다. 공부 30분 → 자리 비움 → 공부 20분이면 `LFS` 30분 | `LFS`는 "안 끊고 이어간 시간"이다. 자리 비운 앞뒤를 이으면 실제로 없던 긴 집중이 만들어진다. 지표 규칙 버전 1에 포함(P2 자기 사용 전이라 저장된 지표가 없다) | ✅ 확정 |
 | P0 | 권한 없는 세션(타이머 전용) 표현 | `StudySession`에 `hasTimeline: Boolean` 추가, 기준선·판정에서 제외 | 권한이 없으면 착석 외 지표를 계산할 수 없다 | ✅ 확정 |
 | P0 | category 저장 형식 | Kotlin enum → Room TEXT | 문자열 오타 방지 | ✅ 확정 |
 | P0 | 지표 규칙 버전 필드 | `StudySession.metricsVersion: Int`. 진행 중은 0, 종료 시 `MetricsVersion.CURRENT`(현재 1)를 저장한다. §5.2 지표 정의·§6.2 복원 규칙·구간 분류 의미가 바뀌면 `CURRENT`를 올리고, 저장 버전이 낮은 세션을 재계산 대상으로 본다 | 기획서 §17.4 "엔티티 설계 시 버전 필드를 미리 둔다". 지표를 비정규화 저장하므로 규칙이 바뀌면 이전 세션과 어긋난다. 자기 사용 개시(P2) 전이라 v1 스키마에 넣는 비용이 없다 | ✅ 확정 |
