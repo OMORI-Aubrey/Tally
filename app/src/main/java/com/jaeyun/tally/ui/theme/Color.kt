@@ -17,6 +17,7 @@ val IndexCard = Color(0xFFFFFFFF)        // 지표 카드
 // 필기구 (글씨·선)
 val Pencil = Color(0xFF2C2C2A)           // 기본 글씨, 손그림 선
 val PencilSoft = Color(0xFF6B675C)       // L3 보조 글씨, 안내 문구. Paper 위 대비 5.5:1
+val PencilFaint = Color(0xFF948F84)      // 통계 제외 세션처럼 한발 물러난 글씨. Paper 위 대비 3.1:1이라 24sp 이상에만 쓴다
 val BluePen = Color(0xFF2B4C7E)          // 판정 문구, 경과 시간, 강조 숫자, 비교값
 val RedPen = Color(0xFFC8352E)           // 목표 달성 도장, 과대평가 표시. 이 두 곳에만 쓴다
 
