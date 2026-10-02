@@ -52,6 +52,8 @@ private fun UsageProbeRoute(viewModel: UsageProbeViewModel = viewModel()) {
         onSelectWindow = viewModel::selectWindow,
         onTargetOnlyChange = viewModel::setTargetOnly,
         onQuery = { viewModel.query() },
+        onClearPerceived = viewModel::clearPerceivedWeek,
+        onExtendRunning = viewModel::extendRunningSession,
         onCopy = {
             val clipboard = context.getSystemService(ClipboardManager::class.java)
             clipboard.setPrimaryClip(

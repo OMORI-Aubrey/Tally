@@ -5,6 +5,7 @@ import android.app.usage.UsageEvents
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.jaeyun.tally.TallyApplication
+import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.usagestats.AppClassifier
 import com.jaeyun.tally.data.usagestats.AutoClassification
 import kotlinx.coroutines.Dispatchers
@@ -53,6 +54,9 @@ data class ProbeUiState(
     val result: ProbeResult? = null,
     /** 사용 기록 권한과 관계없이 DB에서 읽는다 */
     val lastSession: LastSessionInfo? = null,
+    val perceivedWeek: PerceivedWeekInfo? = null,
+    /** 임시(#14): 시간 더하기 대상 */
+    val runningSession: StudySession? = null,
 )
 
 private const val RESUME_QUERY_DELAY_MILLIS = 1_000L
@@ -103,7 +107,27 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val container = getApplication<TallyApplication>().container
             val info = withContext(Dispatchers.IO) { loadLastSession(container) }
-            _uiState.update { it.copy(lastSession = info) }
+            val perceived = withContext(Dispatchers.IO) { loadPerceivedWeek(container, System.currentTimeMillis()) }
+            val running = withContext(Dispatchers.IO) { loadRunningSession(container) }
+            _uiState.update { it.copy(lastSession = info, perceivedWeek = perceived, runningSession = running) }
+        }
+    }
+
+    /** 임시(#14): 진행 중 세션을 [minutes]분 늘린다 */
+    fun extendRunningSession(minutes: Int) {
+        viewModelScope.launch {
+            val container = getApplication<TallyApplication>().container
+            withContext(Dispatchers.IO) { extendRunningSession(container, minutes) }
+            loadLastSession()
+        }
+    }
+
+    /** 체감 질문을 다시 시험할 수 있게 이번 주 기록을 지운다 */
+    fun clearPerceivedWeek() {
+        viewModelScope.launch {
+            val container = getApplication<TallyApplication>().container
+            withContext(Dispatchers.IO) { clearPerceivedWeek(container, System.currentTimeMillis()) }
+            loadLastSession()
         }
     }
 
@@ -112,8 +136,9 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
         val state = _uiState.value
         val res = getApplication<Application>().resources
         val lastSession = state.lastSession?.let { ProbeText.lastSessionDump(res, it) }.orEmpty()
+        val perceived = state.perceivedWeek?.let { ProbeText.perceivedDump(res, it) }.orEmpty()
         val result = state.result?.let { ProbeText.dump(res, it) }.orEmpty()
-        return listOf(lastSession, result).filter { it.isNotEmpty() }.joinToString("\n")
+        return listOf(lastSession, perceived, result).filter { it.isNotEmpty() }.joinToString("\n")
     }
 
     private fun load(windowMinutes: Int): ProbeResult {
