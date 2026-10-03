@@ -227,7 +227,13 @@ com.jaeyun.tally
 
 ## 라이선스
 
-앱에 포함된 손글씨 글꼴은 SIL Open Font License 1.1을 따릅니다. 전문은 [licenses/fonts/](licenses/fonts/)에 있습니다.
+이 저장소는 **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**을 따릅니다.
+
+- 공부·연구·취미 같은 **비상업적 목적**이라면 자유롭게 쓰고, 고치고, 배포할 수 있습니다. 배포할 때는 라이선스 전문(또는 URL)과 `Required Notice:` 줄을 함께 전해야 합니다
+- **상업적으로 쓰려면** 저작권자의 별도 허락이 필요합니다. 문의: sim_518@naver.com
+- 상업적 이용을 막으므로 OSI 정의의 오픈소스가 아니라 **소스 공개(source-available)** 라이선스입니다
+
+앱에 포함된 손글씨 글꼴은 위 라이선스가 아니라 SIL Open Font License 1.1을 따릅니다. 전문은 [licenses/fonts/](licenses/fonts/)에 있습니다.
 
 - [Gaegu](licenses/fonts/Gaegu-OFL.txt) (개구체)
 - [Nanum Pen Script](licenses/fonts/NanumPenScript-OFL.txt) (나눔손글씨 펜체)
