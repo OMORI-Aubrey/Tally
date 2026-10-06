@@ -6,12 +6,24 @@
     <string name="tab_records">기록</string>
     <string name="tab_settings">설정</string>
 
-    <!-- 화면 제목 -->
-    <string name="title_onboarding">온보딩</string>
-
+    <!-- 온보딩 (§8.7, 와이어프레임 §1). 헤드라인의 숫자를 가장 크게 써서 이름을 나눠 둔다 -->
+    <string name="onboarding_headline_lead">3시간 공부했다고 생각한 날\n실제로 안 끊고 이어간 건</string>
+    <string name="onboarding_headline_value">11분</string>
+    <string name="onboarding_headline_tail">일 수 있습니다</string>
     <!-- 자기보고는 1주차 격차 대조값으로만 쓴다 (§5.8). 건너뛸 수 있다 -->
+    <string name="onboarding_daily_question">하루 평균 몇 시간 정도 공부하세요? (선택)</string>
     <string name="onboarding_daily_label">하루 평균 공부 시간</string>
     <string name="onboarding_daily_empty">고르지 않음</string>
+    <!-- ⓘ는 펜체에만 있는 글자라 안내 문구는 펜체(bodyMedium)로 쓴다 -->
+    <string name="onboarding_note_mark">ⓘ</string>
+    <string name="onboarding_boundary">과목이 바뀌면 세션을 끊어주세요. 조각이 정확해집니다</string>
+    <!-- 수집 항목·사용 목적·비수집 항목 고지 (§11) -->
+    <string name="onboarding_collected">공부하는 동안 어떤 앱을 언제 열었는지, 화면을 언제 켜고 껐는지만 읽어요. 안 끊고 이어간 시간을 찾는 데만 써요</string>
+    <string name="onboarding_not_collected">앱 안의 내용, 화면 내용, 위치, 연락처는 읽지 않아요. 기록은 이 기기에만 저장됩니다</string>
+    <string name="onboarding_permission_open">권한 설정하기</string>
+    <string name="onboarding_later">나중에 하기</string>
+    <string name="onboarding_granted">사용 기록 접근이 켜져 있어요</string>
+    <string name="onboarding_start">시작하기</string>
 
     <!-- 사용 기록 접근 권한을 켜는 순서 (§8.7). 시스템 설정은 설치된 앱 전체 목록으로 열린다(§6.4) -->
     <string name="permission_steps_lead">[권한 설정하기]를 누르면 시스템 설정이 열립니다</string>
@@ -163,10 +175,4 @@
     <string name="total_minutes">%1$dm</string>
     <string name="total_hours">%1$dh</string>
     <string name="total_hours_minutes">%1$dh %2$dm</string>
-
-    <!-- 빈 자리 화면(#5). 화면을 구현하면 쓰지 않게 된 것부터 지운다 -->
-    <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
-    <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
-    <string name="placeholder_counter">%1$d번 눌렀어요</string>
-    <string name="placeholder_finish_onboarding">시작하기</string>
 </resources>

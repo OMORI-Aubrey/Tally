@@ -20,13 +20,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.components.IndexTab
 import com.jaeyun.tally.ui.components.IndexTabBar
 import com.jaeyun.tally.ui.components.notebookPaper
-import com.jaeyun.tally.ui.screens.PlaceholderAction
-import com.jaeyun.tally.ui.screens.PlaceholderScreen
 import com.jaeyun.tally.ui.screens.appclass.AppClassificationScreen
+import com.jaeyun.tally.ui.screens.onboarding.OnboardingScreen
 import com.jaeyun.tally.ui.screens.perceived.PerceivedInputScreen
 import com.jaeyun.tally.ui.screens.records.RecordsScreen
 import com.jaeyun.tally.ui.screens.report.SessionReportScreen
@@ -82,8 +80,6 @@ private val TopLevelTab.color
         TopLevelTab.SETTINGS -> TapeMint
     }
 
-// TODO(#19) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
-
 @Composable
 private fun TallyNavHost(
     navController: NavHostController,
@@ -92,12 +88,7 @@ private fun TallyNavHost(
 ) {
     NavHost(navController = navController, startDestination = Timer, modifier = modifier) {
         composable<Onboarding> {
-            PlaceholderScreen(
-                title = stringResource(R.string.title_onboarding),
-                actions = listOf(
-                    PlaceholderAction(stringResource(R.string.placeholder_finish_onboarding)) { navController.finishOnboarding() },
-                ),
-            )
+            OnboardingScreen(onDone = { navController.finishOnboarding() })
         }
         composable<Timer> {
             TimerScreen(
