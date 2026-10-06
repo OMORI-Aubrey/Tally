@@ -116,6 +116,14 @@
     <string name="subject_rename_confirm">바꾸기</string>
     <string name="cancel">취소</string>
 
+    <!-- 설정 탭 (와이어프레임 §6). #23 전까지는 앱 분류 행만 -->
+    <string name="settings_app_class">앱 분류</string>
+    <string name="settings_app_class_description">감지된 앱을 딴짓·허용으로 바꿔요</string>
+
+    <!-- 앱 분류 (§5.1, 와이어프레임 §7) -->
+    <string name="app_class_distract">딴짓</string>
+    <string name="app_class_allowed">허용</string>
+
     <!-- 기록 탭 (§8.4) -->
     <string name="records_empty">세션을 마치면 여기에 기록이 쌓입니다</string>
     <string name="records_sessions_title">세션 목록</string>
