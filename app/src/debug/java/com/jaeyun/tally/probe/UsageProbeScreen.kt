@@ -39,6 +39,7 @@ fun UsageProbeScreen(
     onCopy: () -> Unit,
     onClearPerceived: () -> Unit,
     onExtendRunning: (minutes: Int) -> Unit,
+    onResetOnboarding: () -> Unit,
 ) {
     val res = LocalResources.current
     Scaffold { innerPadding ->
@@ -101,6 +102,23 @@ fun UsageProbeScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         ProbeText.perceivedLines(res, perceived).forEach { HighlightText(it) }
                         OutlinedButton(onClick = onClearPerceived) { Text(stringResource(R.string.probe_perceived_clear)) }
+                    }
+                }
+            }
+
+            state.onboarding?.let { onboarding ->
+                item { SectionTitle(stringResource(R.string.probe_section_onboarding)) }
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        HighlightText(
+                            stringResource(if (onboarding.done) R.string.probe_onboarding_done else R.string.probe_onboarding_not_done),
+                        )
+                        HighlightText(
+                            onboarding.selfReportedDailyMin?.let { stringResource(R.string.probe_onboarding_self_report, it) }
+                                ?: stringResource(R.string.probe_onboarding_self_report_none),
+                        )
+                        SecondaryText(stringResource(R.string.probe_onboarding_reset_hint))
+                        OutlinedButton(onClick = onResetOnboarding) { Text(stringResource(R.string.probe_onboarding_reset)) }
                     }
                 }
             }
