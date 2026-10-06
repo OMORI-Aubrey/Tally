@@ -68,6 +68,7 @@ private fun UsageProbeRoute(viewModel: UsageProbeViewModel = viewModel()) {
                 )
             }
         },
+        onQuickScreenOffCheckChange = viewModel::setQuickScreenOffCheck,
         onCopy = {
             val clipboard = context.getSystemService(ClipboardManager::class.java)
             clipboard.setPrimaryClip(

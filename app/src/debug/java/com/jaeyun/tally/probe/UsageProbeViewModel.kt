@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -58,6 +59,8 @@ data class ProbeUiState(
     /** 임시(#14): 시간 더하기 대상 */
     val runningSession: StudySession? = null,
     val onboarding: OnboardingInfo? = null,
+    /** 임시(#21): ① 화면 꺼짐 확인 기준을 1분으로 낮췄는지 */
+    val quickScreenOffCheck: Boolean = false,
 )
 
 private const val RESUME_QUERY_DELAY_MILLIS = 1_000L
@@ -111,9 +114,25 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
             val perceived = withContext(Dispatchers.IO) { loadPerceivedWeek(container, System.currentTimeMillis()) }
             val running = withContext(Dispatchers.IO) { loadRunningSession(container) }
             val onboarding = withContext(Dispatchers.IO) { loadOnboarding(container) }
+            val quickScreenOff = withContext(Dispatchers.IO) { container.settingsStore.settings.first().quickScreenOffCheck }
             _uiState.update {
-                it.copy(lastSession = info, perceivedWeek = perceived, runningSession = running, onboarding = onboarding)
+                it.copy(
+                    lastSession = info,
+                    perceivedWeek = perceived,
+                    runningSession = running,
+                    onboarding = onboarding,
+                    quickScreenOffCheck = quickScreenOff,
+                )
             }
+        }
+    }
+
+    /** 임시(#21): ① 화면 꺼짐 확인 기준을 60분 ↔ 1분으로 바꾼다. 다음에 끝내는 세션부터 적용된다 */
+    fun setQuickScreenOffCheck(enabled: Boolean) {
+        viewModelScope.launch {
+            val container = getApplication<TallyApplication>().container
+            withContext(Dispatchers.IO) { container.settingsStore.setQuickScreenOffCheck(enabled) }
+            loadLastSession()
         }
     }
 

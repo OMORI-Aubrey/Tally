@@ -15,6 +15,7 @@ import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.RawEvent
 import com.jaeyun.tally.domain.model.RawEventType
 import com.jaeyun.tally.domain.model.Segment
+import com.jaeyun.tally.domain.reconstructor.LONG_SCREEN_OFF_MILLIS
 import com.jaeyun.tally.domain.reconstructor.ReconstructedTimeline
 import com.jaeyun.tally.domain.reconstructor.TimelineReconstructor
 import com.jaeyun.tally.domain.reconstructor.longScreenOffSegments
@@ -58,6 +59,7 @@ enum class ReclassifyResult {
  * @param settings ③ 재부팅 복구 질문에 답한 시각을 둔다
  * @param selfPackage 본 앱 패키지. 복원의 seed 구간이고 분류는 항상 허용이다
  * @param strictInvariant 복원 불변식이 깨지면 예외를 던질지. debug 빌드에서 켠다
+ * @param longScreenOffMillis ① 화면 꺼짐 확인 기준. debug 빌드는 프로브에서 1분으로 낮춰 시험할 수 있다(임시, #21)
  */
 class SessionRepository(
     private val database: TallyDatabase,
@@ -67,6 +69,7 @@ class SessionRepository(
     private val selfPackage: String,
     private val strictInvariant: Boolean,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val longScreenOffMillis: suspend () -> Long = { LONG_SCREEN_OFF_MILLIS },
 ) {
 
     private val dao = database.studySessionDao()
@@ -117,9 +120,12 @@ class SessionRepository(
         }
     }
 
-    /** ① 화면 꺼짐 단일 구간이 60분을 넘는 것(§6.3 #6). 시각 순. 리포트 전에 하나씩 묻는다. 타임라인이 없으면 비어 있다 */
+    /**
+     * ① 화면 꺼짐 단일 구간이 60분([longScreenOffMillis])을 넘는 것(§6.3 #6). 시각 순. 리포트 전에 하나씩 묻는다.
+     * 타임라인이 없으면 비어 있다
+     */
     suspend fun longScreenOffs(sessionId: Long): List<Segment> =
-        segmentDao.getBySession(sessionId).map { it.toSegment() }.longScreenOffSegments()
+        segmentDao.getBySession(sessionId).map { it.toSegment() }.longScreenOffSegments(longScreenOffMillis())
 
     /**
      * ① `[자리 비웠어요]`. 그 화면 꺼짐 구간을 자리 비움으로 바꾸고 지표를 다시 계산한다(§6.3 #6). 자리 비움은 착석·순공에서

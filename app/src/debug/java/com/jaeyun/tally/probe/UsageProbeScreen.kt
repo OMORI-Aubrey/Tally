@@ -40,6 +40,7 @@ fun UsageProbeScreen(
     onClearPerceived: () -> Unit,
     onExtendRunning: (minutes: Int) -> Unit,
     onResetOnboarding: () -> Unit,
+    onQuickScreenOffCheckChange: (Boolean) -> Unit,
 ) {
     val res = LocalResources.current
     Scaffold { innerPadding ->
@@ -102,6 +103,26 @@ fun UsageProbeScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         ProbeText.perceivedLines(res, perceived).forEach { HighlightText(it) }
                         OutlinedButton(onClick = onClearPerceived) { Text(stringResource(R.string.probe_perceived_clear)) }
+                    }
+                }
+            }
+
+            // 임시(#21): ① 다이얼로그를 60분 기다리지 않고 시험한다
+            item { SectionTitle(stringResource(R.string.probe_section_screen_off_check)) }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    HighlightText(
+                        stringResource(
+                            if (state.quickScreenOffCheck) R.string.probe_screen_off_check_quick else R.string.probe_screen_off_check_normal,
+                        ),
+                    )
+                    SecondaryText(stringResource(R.string.probe_screen_off_check_hint))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Switch(checked = state.quickScreenOffCheck, onCheckedChange = onQuickScreenOffCheckChange)
+                        BodyText(stringResource(R.string.probe_screen_off_check_toggle))
                     }
                 }
             }
