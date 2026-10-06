@@ -1,16 +1,11 @@
 package com.jaeyun.tally.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,9 +23,7 @@ import com.jaeyun.tally.ui.theme.BluePen
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft
 import com.jaeyun.tally.ui.theme.RedPen
-import com.jaeyun.tally.ui.theme.StickyNote
 import com.jaeyun.tally.ui.theme.TallyTheme
-import com.jaeyun.tally.ui.theme.TapeBlue
 
 /**
  * 격차 포스트잇 (§8.2 ⓪): 체감 · 실측 최대 · 격차 · `가장 길게 이어간 건 11분`. 체감을 적은 세션(주 1회)만 리포트 맨 위에 붙는다.
@@ -41,31 +34,14 @@ import com.jaeyun.tally.ui.theme.TapeBlue
  */
 @Composable
 fun GapNote(perceivedMin: Int, focusSec: Int, gapPct: Int, lfsSec: Int, modifier: Modifier = Modifier) {
-    // 테이프가 종이 위로 삐져나오는 자리
-    Box(modifier.padding(top = 10.dp)) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .rotate(-1.5f)
-                .background(StickyNote)
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-        ) {
-            GapRow(stringResource(R.string.gap_perceived), sessionDurationText(perceivedMin * 60L))
-            GapRow(stringResource(R.string.gap_measured), stringResource(R.string.focus_max, sessionDurationText(focusSec.toLong())))
-            Spacer(Modifier.height(8.dp))
-            GapMark(gapPct)
-            Spacer(Modifier.height(12.dp))
-            Text(stringResource(R.string.gap_longest_lead), style = MaterialTheme.typography.bodyMedium, color = PencilSoft)
-            Text(sessionDurationText(lfsSec.toLong()), style = MaterialTheme.typography.displayMedium, color = BluePen)
-        }
-        Box(
-            Modifier
-                .align(Alignment.TopCenter)
-                .offset(y = (-8).dp)
-                .rotate(3f)
-                .size(width = 64.dp, height = 18.dp)
-                .background(TapeBlue),
-        )
+    TapedNote(modifier) {
+        GapRow(stringResource(R.string.gap_perceived), sessionDurationText(perceivedMin * 60L))
+        GapRow(stringResource(R.string.gap_measured), stringResource(R.string.focus_max, sessionDurationText(focusSec.toLong())))
+        Spacer(Modifier.height(8.dp))
+        GapMark(gapPct)
+        Spacer(Modifier.height(12.dp))
+        Text(stringResource(R.string.gap_longest_lead), style = MaterialTheme.typography.bodyMedium, color = PencilSoft)
+        Text(sessionDurationText(lfsSec.toLong()), style = MaterialTheme.typography.displayMedium, color = BluePen)
     }
 }
 
