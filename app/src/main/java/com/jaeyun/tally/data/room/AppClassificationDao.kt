@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AppClassificationDao {
@@ -29,4 +30,8 @@ interface AppClassificationDao {
 
     @Query("SELECT * FROM AppClassification ORDER BY appLabel")
     suspend fun getAll(): List<AppClassification>
+
+    /** 앱 분류 화면 (#18). 정렬은 화면이 한국어 순서로 한다 */
+    @Query("SELECT * FROM AppClassification")
+    fun observeAll(): Flow<List<AppClassification>>
 }

@@ -26,9 +26,11 @@ import com.jaeyun.tally.ui.components.IndexTabBar
 import com.jaeyun.tally.ui.components.notebookPaper
 import com.jaeyun.tally.ui.screens.PlaceholderAction
 import com.jaeyun.tally.ui.screens.PlaceholderScreen
+import com.jaeyun.tally.ui.screens.appclass.AppClassificationScreen
 import com.jaeyun.tally.ui.screens.perceived.PerceivedInputScreen
 import com.jaeyun.tally.ui.screens.records.RecordsScreen
 import com.jaeyun.tally.ui.screens.report.SessionReportScreen
+import com.jaeyun.tally.ui.screens.settings.SettingsScreen
 import com.jaeyun.tally.ui.screens.timer.TimerScreen
 import com.jaeyun.tally.ui.theme.TapeBlue
 import com.jaeyun.tally.ui.theme.TapeMint
@@ -80,7 +82,7 @@ private val TopLevelTab.color
         TopLevelTab.SETTINGS -> TapeMint
     }
 
-// TODO(#18 #19 #23) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
+// TODO(#19) 화면을 구현하면 해당 라우트의 PlaceholderScreen을 실제 화면으로 바꾸고, 화면에는 아래 이동 함수를 람다로 넘긴다
 
 @Composable
 private fun TallyNavHost(
@@ -115,17 +117,10 @@ private fun TallyNavHost(
             RecordsScreen(onOpenSession = { navController.navigate(SessionReport(it)) })
         }
         composable<Settings> {
-            PlaceholderScreen(
-                title = stringResource(R.string.tab_settings),
-                actions = listOf(
-                    PlaceholderAction(stringResource(R.string.placeholder_open_app_classification)) {
-                        navController.navigate(AppClassification)
-                    },
-                ),
-            )
+            SettingsScreen(onOpenAppClassification = { navController.navigate(AppClassification) })
         }
         composable<AppClassification> {
-            PlaceholderScreen(title = stringResource(R.string.title_app_classification))
+            AppClassificationScreen(onBack = { navController.popBackStack() })
         }
         composable<PerceivedInput> { entry ->
             val sessionId = entry.toRoute<PerceivedInput>().sessionId
