@@ -56,6 +56,13 @@
     <string name="structure_share">세션 %1$s 중 %2$d%%</string>
     <string name="structure_record">기록 %1$s</string>
     <string name="structure_new_record">기록 갱신</string>
+    <!-- 타임라인 스트립 (§8.3). 범례는 이 세션에 나온 종류만 -->
+    <string name="timeline_description">세션 타임라인</string>
+    <string name="timeline_allowed">허용 앱</string>
+    <string name="timeline_screen_off">화면 꺼짐</string>
+    <string name="timeline_distract">딴짓</string>
+    <string name="timeline_screen_on">화면 켜짐</string>
+    <string name="timeline_away">자리 비움</string>
     <string name="totals_focus">순공</string>
     <!-- 착석(T_total). 화면에서는 "공부"로 쓴다 (PLAN.md §4) -->
     <string name="totals_sitting">공부 %1$s</string>
