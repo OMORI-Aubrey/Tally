@@ -346,6 +346,31 @@ class TimelineReconstructorTest {
         assertInvariant(segments, T0, T0 + end)
     }
 
+    @Test
+    fun `자리 비웠어요를 고른 화면 꺼짐만 자리 비움이 되고 착석과 순공에서 빠진다 (#21)`() {
+        // 공부 5분 → 화면 꺼짐 70분 → 유튜브 5분 → 화면 꺼짐 10분(짧아서 묻지 않음)
+        val end = min(90)
+        val segments = reconstruct(end, screenOff(min(5)), resumed(min(75), YOUTUBE), screenOff(min(80)))
+        val off = segments.longScreenOffSegments().single()
+
+        val marked = segments.markAway(off.startAt, off.endAt)
+
+        assertEquals(listOf(ALLOWED, Category.AWAY, DISTRACT, SCREEN_OFF), marked.map { it.category })
+        val metrics = marked.metrics()
+        assertEquals(20 * 60, metrics.tTotalSec)
+        assertEquals(15 * 60, metrics.tFocusSec)
+        assertEquals(10 * 60, metrics.lfsSec)
+        assertInvariant(marked, T0, T0 + end)
+    }
+
+    @Test
+    fun `경계가 다르거나 화면 꺼짐이 아닌 구간은 자리 비움으로 바꾸지 않는다`() {
+        val segments = listOf(Segment(SELF, ALLOWED, 0, 10), Segment(PseudoPackage.SCREEN_OFF, SCREEN_OFF, 10, 20))
+
+        assertEquals(segments, segments.markAway(10, 19))
+        assertEquals(segments, segments.markAway(0, 10))
+    }
+
     // ── 불변식 검사 자체 ──
 
     @Test
