@@ -120,7 +120,7 @@
 | 계층 | 선택 |
 |---|---|
 | 플랫폼 | Android, minSdk 29 (Android 10) / compileSdk·targetSdk 37 |
-| 빌드 | AGP 9.2.1 (built-in Kotlin 2.4), Gradle 9.4.1, KSP |
+| 빌드 | AGP 9.4.1 (built-in Kotlin 2.4), Gradle 9.6.0, KSP |
 | UI | Jetpack Compose (Material 3, BOM 2026.09), Navigation Compose (type-safe route) |
 | 아키텍처 | MVVM + Repository, ViewModel + `StateFlow` |
 | DI | 수동 DI (`AppContainer`) |
@@ -176,7 +176,7 @@ com.jaeyun.tally
 
 **요구 사항**
 
-- Android Studio — AGP 9.2.1을 지원하는 버전. Studio가 지원하지 않는 AGP로 올리면 동기화가 깨지므로 AGP·Gradle은 올리지 않는다
+- Android Studio — AGP 9.4.1을 지원하는 버전. Studio가 지원하지 않는 AGP로 올리면 동기화가 깨지므로, AGP·Gradle은 Studio를 먼저 업그레이드한 뒤 올린다
 - Android SDK Platform 37
 - JDK 21 (Gradle daemon toolchain. 없으면 자동으로 받는다)
 
