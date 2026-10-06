@@ -8,7 +8,6 @@
 
     <!-- 화면 제목 -->
     <string name="title_onboarding">온보딩</string>
-    <string name="title_app_classification">앱 분류</string>
 
     <!-- 타이머 -->
     <string name="timer_start">시작</string>
@@ -117,10 +116,16 @@
     <string name="cancel">취소</string>
 
     <!-- 설정 탭 (와이어프레임 §6). #23 전까지는 앱 분류 행만 -->
+    <string name="settings_title">설정</string>
     <string name="settings_app_class">앱 분류</string>
     <string name="settings_app_class_description">감지된 앱을 딴짓·허용으로 바꿔요</string>
 
     <!-- 앱 분류 (§5.1, 와이어프레임 §7) -->
+    <string name="app_class_title">앱 분류</string>
+    <string name="app_class_back">뒤로</string>
+    <string name="app_class_intro">공부 중 감지된 앱만 보여요. 바꾸면 다음 세션부터 반영돼요</string>
+    <string name="app_class_empty">아직 감지된 앱이 없어요. 세션을 마치면 공부 중에 연 앱이 여기에 나와요</string>
+    <string name="app_class_browser_note">브라우저는 강의 시청과 딴짓을 구분할 수 없어 기본값이 딴짓이에요</string>
     <string name="app_class_distract">딴짓</string>
     <string name="app_class_allowed">허용</string>
 
@@ -152,6 +157,5 @@
     <string name="placeholder_not_ready">아직 만들지 않은 화면이에요</string>
     <string name="placeholder_counter_start">눌러서 탭 상태 확인하기</string>
     <string name="placeholder_counter">%1$d번 눌렀어요</string>
-    <string name="placeholder_open_app_classification">앱 분류 열기</string>
     <string name="placeholder_finish_onboarding">시작하기</string>
 </resources>

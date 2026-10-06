@@ -52,6 +52,7 @@ private fun NoteTopBarPreview() {
     TallyTheme {
         Column(Modifier.notebookPaper().padding(start = NotebookPaper.ContentStart, end = 24.dp)) {
             NoteTopBar(stringResource(R.string.report_title), stringResource(R.string.report_close), onBack = {})
+            NoteTopBar(stringResource(R.string.app_class_title), stringResource(R.string.app_class_back), onBack = {})
         }
     }
 }
