@@ -57,6 +57,7 @@ data class ProbeUiState(
     val perceivedWeek: PerceivedWeekInfo? = null,
     /** 임시(#14): 시간 더하기 대상 */
     val runningSession: StudySession? = null,
+    val onboarding: OnboardingInfo? = null,
 )
 
 private const val RESUME_QUERY_DELAY_MILLIS = 1_000L
@@ -109,8 +110,17 @@ class UsageProbeViewModel(application: Application) : AndroidViewModel(applicati
             val info = withContext(Dispatchers.IO) { loadLastSession(container) }
             val perceived = withContext(Dispatchers.IO) { loadPerceivedWeek(container, System.currentTimeMillis()) }
             val running = withContext(Dispatchers.IO) { loadRunningSession(container) }
-            _uiState.update { it.copy(lastSession = info, perceivedWeek = perceived, runningSession = running) }
+            val onboarding = withContext(Dispatchers.IO) { loadOnboarding(container) }
+            _uiState.update {
+                it.copy(lastSession = info, perceivedWeek = perceived, runningSession = running, onboarding = onboarding)
+            }
         }
+    }
+
+    /** 온보딩 완료를 되돌린다. 저장이 끝난 뒤에 돌아오므로 이어서 본 앱을 열면 온보딩부터 나온다 */
+    suspend fun resetOnboarding() {
+        val container = getApplication<TallyApplication>().container
+        withContext(Dispatchers.IO) { resetOnboarding(container) }
     }
 
     /** 임시(#14): 진행 중 세션을 [minutes]분 늘린다 */

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 // 라우트 7종 (와이어프레임 §9). 세션 진행(RUNNING)은 타이머의 상태이고 과목 관리는 타이머의 바텀시트라 라우트가 아니다.
 
-/** 최초 1회 시작 화면. 시작 목적지로 쓰는 판단은 P5 온보딩에서 붙인다 */
+/** 최초 1회 시작 화면. 온보딩을 마치기 전(`onboardingDone` false)에만 시작 목적지가 된다 (§8.7) */
 @Serializable
 data object Onboarding
 

@@ -67,6 +67,14 @@
     <string name="probe_perceived_counts">후보 세션 %1$d개 · 답한 세션 %2$d개 · 다음 후보 세션은 %3$d번째</string>
     <string name="probe_perceived_clear">이번 주 체감 기록 지우기</string>
 
+    <string name="probe_section_onboarding">온보딩 (#19)</string>
+    <string name="probe_onboarding_done">온보딩 마침</string>
+    <string name="probe_onboarding_not_done">온보딩 안 마침 — 본 앱을 새로 열면 온보딩부터 나옴</string>
+    <string name="probe_onboarding_self_report">저장된 자기보고 하루 %1$d분</string>
+    <string name="probe_onboarding_self_report_none">저장된 자기보고 없음 (건너뜀)</string>
+    <string name="probe_onboarding_reset_hint">온보딩 완료만 되돌리고 본 앱을 새로 연다. 세션 기록과 앱 분류는 그대로다. 권한 안내 단계를 보려면 먼저 설정에서 Tally의 사용 기록 접근을 끈다</string>
+    <string name="probe_onboarding_reset">온보딩 다시 보기</string>
+
     <string name="probe_section_classification">자동 분류 (조회 범위에서 RESUMED된 앱, 최근순)</string>
     <!-- 앱 이름 — 딴짓/허용 (근거) 패키지 -->
     <string name="probe_classification_row">%1$s — %2$s (%3$s) %4$s</string>

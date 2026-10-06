@@ -10,13 +10,16 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.jaeyun.tally.MainActivity
 import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.theme.TallyTheme
+import kotlinx.coroutines.launch
 
 /**
  * P0 사용 기록 프로브 (#1). debug 빌드에만 있는 별도 런처 진입점이다.
@@ -39,6 +42,7 @@ class UsageProbeActivity : ComponentActivity() {
 private fun UsageProbeRoute(viewModel: UsageProbeViewModel = viewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val clipLabel = stringResource(R.string.probe_clip_label)
 
     LifecycleResumeEffect(viewModel) {
@@ -54,6 +58,16 @@ private fun UsageProbeRoute(viewModel: UsageProbeViewModel = viewModel()) {
         onQuery = { viewModel.query() },
         onClearPerceived = viewModel::clearPerceivedWeek,
         onExtendRunning = viewModel::extendRunningSession,
+        // 본 앱은 시작 화면을 열 때 한 번만 정하므로, 떠 있는 본 앱 태스크를 지우고 새로 연다
+        onResetOnboarding = {
+            scope.launch {
+                viewModel.resetOnboarding()
+                context.startActivity(
+                    Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                )
+            }
+        },
         onCopy = {
             val clipboard = context.getSystemService(ClipboardManager::class.java)
             clipboard.setPrimaryClip(
