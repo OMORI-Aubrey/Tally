@@ -51,6 +51,18 @@
     <string name="dialog_screen_off_detail">자리 비움으로 하면 공부 시간에서 빠져요</string>
     <string name="dialog_screen_off_studied">공부했어요</string>
     <string name="dialog_screen_off_away">자리 비웠어요</string>
+    <!-- ② 공부 시간이 3시간 12분이에요. 시간 표기는 늘 받침(분·간)으로 끝난다 -->
+    <string name="dialog_over_long">공부 시간이 %1$s이에요. 종료를 잊으셨나요?</string>
+    <string name="dialog_over_long_detail">종료를 잊었으면 기록만 남기고 통계에서 빼요</string>
+    <string name="dialog_over_long_studied">계속 공부했어요</string>
+    <string name="dialog_over_long_forgot">종료를 잊었어요</string>
+    <!-- ③ 강제 종료·최근 앱에서 지운 경우는 묻지 않고 이어진다 (PLAN.md §4) -->
+    <string name="dialog_recovery">휴대폰을 다시 켜기 전에 시작한 세션이 있어요. 이어서 기록할까요?</string>
+    <!-- 코틀린 · 9/7 19:00 시작 -->
+    <string name="dialog_recovery_started">%1$s 시작</string>
+    <string name="dialog_recovery_started_subject">%1$s · %2$s 시작</string>
+    <string name="dialog_recovery_continue">이어서 기록</string>
+    <string name="dialog_recovery_delete">삭제</string>
 
     <!-- 체감 입력 (§3.4). 실측은 보여주지 않는다 -->
     <string name="perceived_question_lead">방금 세션에서</string>

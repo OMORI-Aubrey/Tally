@@ -1,5 +1,6 @@
 package com.jaeyun.tally.ui.screens.timer
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -12,19 +13,25 @@ import com.jaeyun.tally.data.repository.SubjectRepository
 import com.jaeyun.tally.data.repository.SubjectSummary
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.room.countsInStats
+import com.jaeyun.tally.domain.metrics.SessionValidity
 import com.jaeyun.tally.domain.model.SubjectName
 import com.jaeyun.tally.ui.components.WeeklySummary
 import com.jaeyun.tally.util.WeekRange
 import com.jaeyun.tally.util.weekRangeOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.ZoneId
 import kotlin.random.Random
 
@@ -100,6 +107,26 @@ internal fun shouldAskPerceived(
 /** 방금 끝낸 세션. [askPerceived]면 리포트 전에 체감 입력을 거친다 */
 data class FinishedSession(val sessionId: Long, val askPerceived: Boolean)
 
+/** 타이머 화면 위에 띄우는 다이얼로그 (§6.3, 와이어프레임 §8). 한 번에 하나만 띄운다 */
+sealed interface TimerDialog {
+    /** ① 화면 꺼짐 단일 구간이 60분을 넘었다(§6.3 #6). `[공부했어요]` / `[자리 비웠어요]` */
+    data class LongScreenOff(val startAt: Long, val endAt: Long) : TimerDialog
+
+    /** ② 자리 비움을 뺀 착석 [totalSec]가 180분을 넘었다(§6.3 #4). `[계속 공부했어요]` / `[종료를 잊었어요]` */
+    data class OverLong(val totalSec: Int) : TimerDialog
+
+    /** ③ 세션을 시작한 뒤 기기를 재부팅했다(§6.3 #5). `[이어서 기록]` / `[삭제]` */
+    data class Recovery(val startAt: Long, val subjectName: String?) : TimerDialog
+}
+
+/**
+ * ③ 진행 중 세션을 이어서 기록할지 물을지. 세션을 시작한 뒤([startAt]) 기기가 재부팅됐고([bootAt]), 그 재부팅 뒤에 아직 답하지
+ * 않았을 때만([answeredAt]보다 뒤에 재부팅) 묻는다. 강제 종료나 최근 앱에서 지운 경우는 묻지 않는다 — 타이머는 시작 시각만
+ * 저장하므로 다시 열면 그대로 이어진다(PLAN.md §4).
+ */
+internal fun asksRecovery(startAt: Long, bootAt: Long, answeredAt: Long?): Boolean =
+    bootAt > startAt && (answeredAt == null || bootAt > answeredAt)
+
 /**
  * 타이머 탭 (§8.1, §8.5). 상태는 Room의 진행 중 세션 하나로 정해지므로, 앱을 강제 종료하거나 재부팅해도
  * 다시 열면 RUNNING이 이어진다(§6.3 #5). 경과 시간은 저장하지 않고 화면이 `now − startAt`으로 그린다.
@@ -109,7 +136,10 @@ data class FinishedSession(val sessionId: Long, val askPerceived: Boolean)
  *
  * 주간 요약 줄의 "이번 주"는 상태를 새로 만들 때의 현재 시각으로 정한다. 화면을 떠났다 돌아오면 다시 정해진다.
  *
- * 세션을 끝내면 리포트 전에 체감 입력을 거칠지 정한다([shouldAskPerceived]).
+ * 세션을 끝내면 리포트 전에 ① 긴 화면 꺼짐, ② 180분 초과를 차례로 묻고(#21), 체감 입력을 거칠지 정한다([shouldAskPerceived]).
+ * 앱을 열었을 때 재부팅 뒤 이어지는 세션이면 ③ 이어서 기록할지 묻는다([asksRecovery]).
+ *
+ * @param bootTime 기기가 마지막으로 켜진 시각(epoch millis)
  */
 class TimerViewModel(
     private val sessions: SessionRepository,
@@ -118,6 +148,7 @@ class TimerViewModel(
     private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val clock: () -> Long = System::currentTimeMillis,
     private val random: Random = Random.Default,
+    private val bootTime: () -> Long = { System.currentTimeMillis() - SystemClock.elapsedRealtime() },
 ) : ViewModel() {
 
     private val selected = MutableStateFlow<String?>(null)
@@ -149,23 +180,87 @@ class TimerViewModel(
     /** 방금 종료한 세션. 화면이 받아서 체감 입력이나 리포트로 이동한다 */
     val finishedSessions: Flow<FinishedSession> = finished.receiveAsFlow()
 
+    private val _dialog = MutableStateFlow<TimerDialog?>(null)
+
+    /** 지금 띄울 다이얼로그. 답하면 다음 다이얼로그로 넘어가거나 null이 된다 */
+    val dialog: StateFlow<TimerDialog?> = _dialog.asStateFlow()
+
+    /** 띄운 다이얼로그의 답. true면 두 번째 선택지(자리 비웠어요, 종료를 잊었어요, 삭제) */
+    private var pendingAnswer: CompletableDeferred<Boolean>? = null
+
+    /** 다이얼로그를 한 번에 하나만 띄운다 */
+    private val dialogLock = Mutex()
+
     init {
         viewModelScope.launch {
             val last = subjects.lastUsedVisibleSubject()
             if (!userPicked) selected.value = last
         }
+        viewModelScope.launch { checkRecovery() }
     }
 
     fun start() {
         viewModelScope.launch { sessions.start(subjectName = selected.value, now = clock()) }
     }
 
+    /**
+     * 세션을 끝낸다. 리포트로 가기 전에 ① 60분 넘게 화면이 꺼진 구간마다 공부했는지 자리를 비웠는지 묻고,
+     * ② 자리 비움을 빼고도 착석이 180분을 넘으면 종료를 잊었는지 묻는다(§6.3 #4·#6). 답을 저장한 뒤에 체감 입력을 정한다 —
+     * 통계 포함 여부가 바뀔 수 있어서다. 답하는 도중 앱이 정리되면 묻지 않은 상태(공부한 시간, 통계 제외)로 남는다.
+     */
     fun finish() {
         val running = uiState.value as? TimerUiState.Running ?: return
         viewModelScope.launch {
-            val done = sessions.finish(running.sessionId, now = clock()) ?: return@launch
+            var done = sessions.finish(running.sessionId, now = clock()) ?: return@launch
+            for (off in sessions.longScreenOffs(done.id)) {
+                if (ask(TimerDialog.LongScreenOff(off.startAt, off.endAt))) {
+                    done = sessions.markAway(done.id, off.startAt, off.endAt) ?: done
+                }
+            }
+            if (SessionValidity.isOverLong(done.tTotalSec)) {
+                val forgot = ask(TimerDialog.OverLong(done.tTotalSec))
+                done = sessions.answerOverLong(done.id, forgotToFinish = forgot) ?: done
+            }
             finished.send(FinishedSession(done.id, askPerceived = askPerceived(done)))
         }
+    }
+
+    /** ③ 앱을 열 때 한 번 본다. 재부팅 뒤 이어지는 세션이면 이어서 기록할지 묻는다 */
+    private suspend fun checkRecovery() {
+        val running = sessions.runningSession.first() ?: return
+        if (!asksRecovery(running.startAt, bootTime(), sessions.recoveryAnsweredAt())) return
+        if (ask(TimerDialog.Recovery(running.startAt, running.subjectName))) {
+            sessions.deleteUnfinished(running.id)
+        } else {
+            sessions.continueAfterReboot(now = clock())
+        }
+    }
+
+    /** 다이얼로그를 띄우고 답을 기다린다. 두 번째 선택지를 골랐으면 true */
+    private suspend fun ask(dialog: TimerDialog): Boolean = dialogLock.withLock {
+        val answer = CompletableDeferred<Boolean>()
+        pendingAnswer = answer
+        _dialog.value = dialog
+        try {
+            answer.await()
+        } finally {
+            _dialog.value = null
+            pendingAnswer = null
+        }
+    }
+
+    /** ① [away]면 `[자리 비웠어요]` */
+    fun answerScreenOff(away: Boolean) = answer<TimerDialog.LongScreenOff>(away)
+
+    /** ② [forgot]이면 `[종료를 잊었어요]` */
+    fun answerOverLong(forgot: Boolean) = answer<TimerDialog.OverLong>(forgot)
+
+    /** ③ [delete]면 `[삭제]` */
+    fun answerRecovery(delete: Boolean) = answer<TimerDialog.Recovery>(delete)
+
+    /** 띄운 다이얼로그가 [T]일 때만 답한다. 연타해도 처음 답만 쓴다 */
+    private inline fun <reified T : TimerDialog> answer(second: Boolean) {
+        if (_dialog.value is T) pendingAnswer?.complete(second)
     }
 
     /** 물기로 했으면 화면을 띄우기 전에 물었다고 적어 둔다 */

@@ -55,6 +55,8 @@ import kotlinx.coroutines.delay
  * 시작하면 하단 탭이 내려가는 동안 종료 버튼이 위에서 내려오며 나타나고, 이어서 경과 시간이 왼쪽 글자부터 나타난다.
  * 앱을 다시 열어 RUNNING을 복원할 때는 애니메이션 없이 그린다.
  *
+ * 세션을 끝낸 뒤 리포트로 가기 전과 재부팅 뒤 앱을 열었을 때 다이얼로그를 띄운다([TimerDialog], #21).
+ *
  * @param onRunningChange 진행 중 세션을 확인하면 진행 중 여부를 알린다. 앱이 진행 중에는 하단 탭을 숨긴다(와이어프레임 §2-B)
  * @param onSessionFinished 종료한 세션. 체감을 물을 세션이면 리포트 전에 체감 입력으로 간다
  * @param onOpenRecords 주간 요약 줄을 눌렀다. 기록 탭으로 간다
@@ -110,6 +112,16 @@ fun TimerScreen(
                 viewModel.finish()
             },
             modifier = modifier,
+        )
+    }
+
+    val dialog by viewModel.dialog.collectAsStateWithLifecycle()
+    dialog?.let {
+        TimerDialogHost(
+            dialog = it,
+            onAnswerScreenOff = viewModel::answerScreenOff,
+            onAnswerOverLong = viewModel::answerOverLong,
+            onAnswerRecovery = viewModel::answerRecovery,
         )
     }
 }
