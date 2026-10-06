@@ -57,6 +57,7 @@
     <string name="structure_record">기록 %1$s</string>
     <string name="structure_new_record">기록 갱신</string>
     <!-- 타임라인 스트립 (§8.3). 범례는 이 세션에 나온 종류만 -->
+    <string name="timeline_title">흐름</string>
     <string name="timeline_description">세션 타임라인</string>
     <string name="timeline_allowed">허용 앱</string>
     <string name="timeline_screen_off">화면 꺼짐</string>
