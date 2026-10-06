@@ -9,6 +9,17 @@
     <!-- 화면 제목 -->
     <string name="title_onboarding">온보딩</string>
 
+    <!-- 자기보고는 1주차 격차 대조값으로만 쓴다 (§5.8). 건너뛸 수 있다 -->
+    <string name="onboarding_daily_label">하루 평균 공부 시간</string>
+    <string name="onboarding_daily_empty">고르지 않음</string>
+
+    <!-- 사용 기록 접근 권한을 켜는 순서 (§8.7). 시스템 설정은 설치된 앱 전체 목록으로 열린다(§6.4) -->
+    <string name="permission_steps_lead">[권한 설정하기]를 누르면 시스템 설정이 열립니다</string>
+    <string name="permission_steps_still_off">아직 꺼져 있어요. 아래 순서대로 켜 주세요</string>
+    <!-- 목록에서 "Tally"를 찾아 탭하세요. 앱 이름은 목록에 보이는 이름(app_name)을 넣는다 -->
+    <string name="permission_step_find">목록에서 \"%1$s\"를 찾아 탭하세요</string>
+    <string name="permission_step_switch">스위치를 켜고 뒤로 돌아오세요</string>
+
     <!-- 타이머 -->
     <string name="timer_start">시작</string>
     <string name="timer_finish">종료</string>
