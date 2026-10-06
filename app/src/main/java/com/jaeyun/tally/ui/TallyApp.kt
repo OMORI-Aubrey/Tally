@@ -1,5 +1,6 @@
 package com.jaeyun.tally.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -10,10 +11,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -39,9 +41,12 @@ import com.jaeyun.tally.ui.theme.TapePink
  *
  * 하단 탭은 탭 목적지에서만 보인다. 앱 분류·체감 입력·세션 리포트·온보딩은 탭 없이 전체 화면으로 연다.
  * 타이머가 진행 중일 때도 숨긴다. 공부 중에 기록을 보러 갈 이유가 없다(와이어프레임 §2-B).
+ *
+ * 온보딩을 마치기 전에는 온보딩이 시작 목적지다(§8.7). 설정을 읽는 동안에는 빈 종이만 그린다.
  */
 @Composable
-fun TallyApp() {
+fun TallyApp(viewModel: TallyAppViewModel = viewModel(factory = TallyAppViewModel.Factory)) {
+    val startDestination by viewModel.startDestination.collectAsStateWithLifecycle()
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val selectedTab = TopLevelTab.entries.firstOrNull { tab ->
@@ -64,11 +69,16 @@ fun TallyApp() {
             }
         },
     ) { innerPadding ->
-        TallyNavHost(
-            navController = navController,
-            onTimerRunningChange = { timerRunning = it },
-            modifier = Modifier.fillMaxSize().notebookPaper().padding(innerPadding),
-        )
+        val contentModifier = Modifier.fillMaxSize().notebookPaper().padding(innerPadding)
+        when (val start = startDestination) {
+            null -> Box(contentModifier)
+            else -> TallyNavHost(
+                navController = navController,
+                startDestination = start,
+                onTimerRunningChange = { timerRunning = it },
+                modifier = contentModifier,
+            )
+        }
     }
 }
 
@@ -83,10 +93,11 @@ private val TopLevelTab.color
 @Composable
 private fun TallyNavHost(
     navController: NavHostController,
+    startDestination: Any,
     onTimerRunningChange: (Boolean) -> Unit,
     modifier: Modifier,
 ) {
-    NavHost(navController = navController, startDestination = Timer, modifier = modifier) {
+    NavHost(navController = navController, startDestination = startDestination, modifier = modifier) {
         composable<Onboarding> {
             OnboardingScreen(onDone = { navController.finishOnboarding() })
         }
@@ -124,9 +135,14 @@ private fun TallyNavHost(
     }
 }
 
-/** 탭마다 백스택과 화면 상태를 따로 보존한다. 시작 탭(타이머)이 아닌 탭에서 뒤로가기를 누르면 타이머로 돌아온다 */
+/**
+ * 탭마다 백스택과 화면 상태를 따로 보존한다. 타이머가 아닌 탭에서 뒤로가기를 누르면 타이머로 돌아온다.
+ *
+ * 그래프의 시작 목적지가 아니라 타이머까지 꺼낸다. 온보딩으로 시작한 날은 시작 목적지(온보딩)가 백스택에 없어서
+ * 거기까지 꺼내려 하면 아무것도 꺼내지 않고 탭이 쌓인다. 온보딩을 마치면 타이머가 늘 백스택 맨 아래에 있다.
+ */
 private fun NavController.navigateToTab(tab: TopLevelTab) = navigate(tab.route) {
-    popUpTo(graph.findStartDestination().id) { saveState = true }
+    popUpTo<Timer> { saveState = true }
     launchSingleTop = true
     restoreState = true
 }
