@@ -35,6 +35,7 @@ import com.jaeyun.tally.ui.components.MetricCard
 import com.jaeyun.tally.ui.components.NoteSectionTitle
 import com.jaeyun.tally.ui.components.NotebookPaper
 import com.jaeyun.tally.ui.components.StructureHeadline
+import com.jaeyun.tally.ui.components.TimelineStrip
 import com.jaeyun.tally.ui.components.TotalsRow
 import com.jaeyun.tally.ui.components.UnclassifiedAppPrompt
 import com.jaeyun.tally.ui.components.sessionDurationText
@@ -44,10 +45,9 @@ import com.jaeyun.tally.util.Josa
 import java.time.format.DateTimeFormatter
 
 /**
- * 세션 리포트 (§8.2, 와이어프레임 §4). 위에서부터 ⓪ 격차 → ① 구조 헤드라인 → ③ 총량 → ④ 지표 카드 → ⑤ 이탈 목록 →
+ * 세션 리포트 (§8.2, 와이어프레임 §4). 위에서부터 ⓪ 격차 → ① 구조 헤드라인 → ② 타임라인 스트립 → ③ 총량 → ④ 지표 카드 → ⑤ 이탈 목록 →
  * ⑥ 미분류 앱 질문 → ⑦ 메타. 무게중심은 ⓪과 ①이고 나머지는 스크롤해서 본다. ⓪이 없으면 ①이 맨 위가 된다.
  * 이탈 목록의 앱은 길게 눌러 허용으로 바꿀 수 있고(#16), 바꾸면 이 세션을 다시 계산한다(§5.1).
- * ② 타임라인 스트립은 #17에서 ①과 ③ 사이에 붙는다.
  *
  * 판정·목표는 주 단위라 이 화면에 두지 않는다. 문구는 원인을 단정하지 않는다(§5.5).
  *
@@ -132,7 +132,16 @@ private fun ColumnScope.ReportBody(
             isNewRecord = structure.record == RecordMark.NewRecord,
         )
     }
-    // TODO(#17) 타임라인 스트립
+    report.strip?.let { segments ->
+        Spacer(Modifier.height(24.dp))
+        NoteSectionTitle(stringResource(R.string.timeline_title))
+        Spacer(Modifier.height(8.dp))
+        TimelineStrip(
+            segments = segments,
+            startTime = report.meta.startTime.format(TimeFormat),
+            endTime = report.meta.endTime.format(TimeFormat),
+        )
+    }
 
     Spacer(Modifier.height(24.dp))
     TotalsRow(focusSec = report.totals.focusSec, sittingSec = report.totals.sittingSec, distractSec = report.totals.distractSec)

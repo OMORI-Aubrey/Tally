@@ -7,6 +7,7 @@ import com.jaeyun.tally.data.room.ClassificationSource
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
+import com.jaeyun.tally.ui.components.TimelineKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -152,6 +153,43 @@ class SessionReportTest {
         // 화면 켜짐은 앱이 아니라 재분류할 수 없다
         assertEquals(listOf(INSTA, null, YOUTUBE), distractions.map { it.packageName })
         assertEquals(listOf(180, 60, 300), distractions.map { it.durationSec })
+    }
+
+    @Test
+    fun `스트립은 구간을 종류와 길이 그대로 옮기고 화면만 켠 구간을 따로 칠한다`() {
+        val strip = report(
+            session(lengthMin = 60),
+            segments = listOf(
+                segment("com.jaeyun.tally", Category.ALLOWED, 0, 10),
+                segment(INSTA, Category.DISTRACT, 10, 13),
+                segment(PseudoPackage.SCREEN_OFF, Category.SCREEN_OFF, 13, 40),
+                segment(PseudoPackage.SCREEN_ON_UNKNOWN, Category.DISTRACT, 40, 41),
+                segment(PseudoPackage.SCREEN_OFF, Category.AWAY, 41, 60),
+            ),
+        ).strip!!
+
+        assertEquals(
+            listOf(TimelineKind.ALLOWED, TimelineKind.DISTRACT, TimelineKind.SCREEN_OFF, TimelineKind.SCREEN_ON, TimelineKind.AWAY),
+            strip.map { it.kind },
+        )
+        assertEquals(listOf(10 * MIN, 3 * MIN, 27 * MIN, 1 * MIN, 19 * MIN), strip.map { it.durationMillis })
+        // 구간 합 = 세션 길이
+        assertEquals(60 * MIN, strip.sumOf { it.durationMillis })
+    }
+
+    @Test
+    fun `구간이 세션 전체를 빈틈 없이 덮지 않으면 스트립을 그리지 않는다`() {
+        val full = listOf(segment("com.jaeyun.tally", Category.ALLOWED, 0, 30), segment(INSTA, Category.DISTRACT, 30, 60))
+
+        assertTrue(report(session(lengthMin = 60), segments = full).strip != null)
+        // 가운데 빈틈
+        assertNull(report(session(lengthMin = 60), segments = listOf(full[0], segment(INSTA, Category.DISTRACT, 31, 60))).strip)
+        // 끝이 모자람
+        assertNull(report(session(lengthMin = 60), segments = listOf(full[0], segment(INSTA, Category.DISTRACT, 30, 59))).strip)
+        // 구간이 없음
+        assertNull(report(session(lengthMin = 60), segments = emptyList()).strip)
+        // 타임라인이 없는 세션
+        assertNull(report(session(lengthMin = 60, timeline = false), segments = full).strip)
     }
 
     @Test

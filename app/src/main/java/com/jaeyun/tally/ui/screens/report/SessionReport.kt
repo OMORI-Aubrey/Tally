@@ -1,11 +1,14 @@
 package com.jaeyun.tally.ui.screens.report
 
 import com.jaeyun.tally.data.repository.SessionReportData
+import com.jaeyun.tally.data.room.AppSegment
 import com.jaeyun.tally.data.room.ClassificationSource
 import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.domain.metrics.MetricsCalculator
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
+import com.jaeyun.tally.ui.components.TimelineKind
+import com.jaeyun.tally.ui.components.TimelineSegment
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -14,13 +17,14 @@ import kotlin.math.roundToInt
 
 /**
  * 세션 리포트 한 장 (§8.2). 화면은 위에서 아래로 그리기만 한다. 판정·목표는 주 단위라 들어 있지 않다.
- * 2번 타임라인 스트립은 #17에서 붙는다.
  */
 data class SessionReport(
     /** ⓪ 체감을 적었고 실측과 견줄 수 있을 때만 */
     val gap: GapHeadline?,
     /** ① 타임라인이 없으면(사용 기록 권한 없이 끝낸 세션) null */
     val structure: StructureSummary?,
+    /** ② 타임라인 스트립. 타임라인이 없거나 구간이 세션 전체를 빈틈 없이 덮지 않으면 null */
+    val strip: List<TimelineSegment>?,
     /** ③ */
     val totals: Totals,
     /** ④ 타임라인이 없으면 null */
@@ -82,6 +86,24 @@ data class SessionMeta(
     val excludedFromStats: Boolean,
 )
 
+/**
+ * 구간이 `[startAt, endAt)`를 빈틈·겹침 없이 덮는지(§6.2 불변식). 스트립은 비율을 고치지 않으므로, 덮지 않으면
+ * 나머지 구간이 늘어나 조용히 왜곡된다(§6.2.2). 그럴 때는 스트립을 그리지 않는다.
+ */
+internal fun coversSession(segments: List<AppSegment>, startAt: Long, endAt: Long): Boolean =
+    segments.isNotEmpty() &&
+        segments.first().startAt == startAt &&
+        segments.last().endAt == endAt &&
+        segments.zipWithNext().all { (a, b) -> a.endAt == b.startAt }
+
+/** 스트립 한 칸의 종류. 화면만 켠 구간은 딴짓으로 분류되지만 따로 칠한다 */
+internal fun AppSegment.timelineKind(): TimelineKind = when (category) {
+    Category.ALLOWED -> TimelineKind.ALLOWED
+    Category.SCREEN_OFF -> TimelineKind.SCREEN_OFF
+    Category.AWAY -> TimelineKind.AWAY
+    Category.DISTRACT -> if (packageName == PseudoPackage.SCREEN_ON_UNKNOWN) TimelineKind.SCREEN_ON else TimelineKind.DISTRACT
+}
+
 /** 미분류 앱 질문은 세션당 이만큼만 (§5.1) */
 internal const val MAX_UNCLASSIFIED_PROMPTS = 2
 
@@ -124,6 +146,12 @@ internal fun buildSessionReport(data: SessionReportData, zone: ZoneId): SessionR
         null
     }
 
+    val strip = if (timeline && coversSession(data.segments, session.startAt, endAt)) {
+        data.segments.map { TimelineSegment(it.timelineKind(), it.endAt - it.startAt) }
+    } else {
+        null
+    }
+
     val distractSegments = data.segments.filter { it.category == Category.DISTRACT }
     val distractions = distractSegments.map { segment ->
         val app = segment.packageName.takeIf { it != PseudoPackage.SCREEN_ON_UNKNOWN }
@@ -147,6 +175,7 @@ internal fun buildSessionReport(data: SessionReportData, zone: ZoneId): SessionR
     return SessionReport(
         gap = gap,
         structure = structure,
+        strip = strip,
         totals = Totals(
             focusSec = if (timeline) session.tFocusSec else null,
             sittingSec = session.tTotalSec,
