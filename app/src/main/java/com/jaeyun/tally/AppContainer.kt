@@ -30,6 +30,7 @@ class AppContainer(private val appContext: Context) {
             database = database,
             usageEvents = usageEventSource,
             classifier = appClassifier,
+            settings = settingsStore,
             selfPackage = appContext.packageName,
             // debug 빌드는 복원 불변식이 깨지면 바로 멈춘다. BuildConfig 대신 debuggable 플래그로 판단한다
             strictInvariant = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0,

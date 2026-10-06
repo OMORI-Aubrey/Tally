@@ -66,6 +66,14 @@ class AppSettingsStoreTest {
     }
 
     @Test
+    fun `재부팅 복구 질문에 답한 시각을 남긴다`() = runTest {
+        val store = store()
+        store.setRecoveryAnsweredAt(2_000)
+
+        assertEquals(2_000L, store.settings.first().recoveryAnsweredAt)
+    }
+
+    @Test
     fun `과목 숨기기와 되돌리기`() = runTest {
         val store = store()
         store.setSubjectHidden("수햑", hidden = true)

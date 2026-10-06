@@ -1,8 +1,10 @@
 package com.jaeyun.tally.data.repository
 
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.jaeyun.tally.data.datastore.AppSettingsStore
 import com.jaeyun.tally.data.room.AppClassification
 import com.jaeyun.tally.data.room.ClassificationSource
 import com.jaeyun.tally.data.room.TallyDatabase
@@ -15,7 +17,10 @@ import com.jaeyun.tally.domain.metrics.MetricsVersion
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.RawEvent
 import com.jaeyun.tally.domain.model.RawEventType
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -26,6 +31,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
 
 private const val SELF = "com.jaeyun.tally"
 private const val YOUTUBE = "com.google.android.youtube"
@@ -54,6 +60,8 @@ class SessionRepositoryTest {
     private lateinit var usageEvents: FakeUsageEvents
     private lateinit var classifier: FakeClassifier
     private lateinit var repository: SessionRepository
+    private lateinit var settingsFile: File
+    private val settingsScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     @Before
     fun setUp() {
@@ -61,12 +69,16 @@ class SessionRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, TallyDatabase::class.java).build()
         usageEvents = FakeUsageEvents()
         classifier = FakeClassifier()
-        repository = SessionRepository(db, usageEvents, classifier, SELF, strictInvariant = true, ioDispatcher = Dispatchers.Unconfined)
+        settingsFile = File(context.cacheDir, "session-repository-test-${System.nanoTime()}.preferences_pb")
+        val settings = AppSettingsStore(PreferenceDataStoreFactory.create(scope = settingsScope) { settingsFile })
+        repository = SessionRepository(db, usageEvents, classifier, settings, SELF, strictInvariant = true, ioDispatcher = Dispatchers.Unconfined)
     }
 
     @After
     fun tearDown() {
         db.close()
+        settingsScope.cancel()
+        settingsFile.delete()
     }
 
     private fun resumed(at: Long, pkg: String) = RawEvent(at, RawEventType.ACTIVITY_RESUMED, pkg)
@@ -236,5 +248,67 @@ class SessionRepositoryTest {
 
         assertNull(repository.finish(id, now = 20 * MIN))
         assertEquals(10 * MIN, db.studySessionDao().getById(id)?.endAt)
+    }
+
+    private fun screenOff(at: Long) = RawEvent(at, RawEventType.SCREEN_NON_INTERACTIVE, null)
+
+    @Test
+    fun 긴_화면_꺼짐을_자리_비움으로_바꾸면_착석과_순공에서_빠진다() = runTest {
+        // 공부 20분 → 화면 꺼짐 70분 → 공부 10분
+        val id = repository.start(subjectName = null, now = 0)
+        usageEvents.result = UsageQueryResult.Events(listOf(screenOff(20 * MIN), resumed(90 * MIN, SELF)))
+        repository.finish(id, now = 100 * MIN)
+
+        val off = repository.longScreenOffs(id).single()
+        val updated = repository.markAway(id, off.startAt, off.endAt)!!
+
+        assertEquals(30 * 60, updated.tTotalSec)
+        assertEquals(30 * 60, updated.tFocusSec)
+        assertEquals(20 * 60, updated.lfsSec)
+        assertTrue(updated.isValidForStats)
+        assertEquals(listOf(Category.ALLOWED, Category.AWAY, Category.ALLOWED), db.appSegmentDao().getBySession(id).map { it.category })
+        assertTrue(repository.longScreenOffs(id).isEmpty())
+    }
+
+    @Test
+    fun 다시_계산해도_자리_비움과_통계_포함_여부를_지킨다() = runTest {
+        // 공부 10분 → 유튜브 5분 → 화면 꺼짐 75분 → 공부 170분. 자리 비움을 빼도 착석이 185분이라 ②에서 통계에 넣었다
+        val id = repository.start(subjectName = null, now = 0)
+        usageEvents.result = UsageQueryResult.Events(listOf(resumed(10 * MIN, YOUTUBE), screenOff(15 * MIN), resumed(90 * MIN, SELF)))
+        repository.finish(id, now = 260 * MIN)
+        repository.markAway(id, 15 * MIN, 90 * MIN)
+        repository.answerOverLong(id, forgotToFinish = false)
+
+        val result = repository.reclassify(id, YOUTUBE, Category.ALLOWED)
+
+        assertEquals(ReclassifyResult.RECOMPUTED, result)
+        val session = db.studySessionDao().getById(id)!!
+        assertEquals(0, session.interruptionCount)
+        assertEquals(185 * 60, session.tTotalSec)
+        assertTrue(session.isValidForStats)
+        assertEquals(listOf(Category.ALLOWED, Category.AWAY, Category.ALLOWED), db.appSegmentDao().getBySession(id).map { it.category })
+    }
+
+    @Test
+    fun 착석_180분_초과는_답에_따라_통계에_넣거나_뺀다() = runTest {
+        val id = repository.start(subjectName = null, now = 0)
+        val finished = repository.finish(id, now = 200 * MIN)!!
+        assertFalse(finished.isValidForStats)
+
+        assertTrue(repository.answerOverLong(id, forgotToFinish = false)!!.isValidForStats)
+        assertFalse(repository.answerOverLong(id, forgotToFinish = true)!!.isValidForStats)
+    }
+
+    @Test
+    fun 재부팅_뒤_삭제하면_진행_중_세션이_없어지고_이어서_기록하면_답한_시각을_남긴다() = runTest {
+        val first = repository.start(subjectName = null, now = 0)
+        repository.deleteUnfinished(first)
+        assertNull(repository.runningSession.first())
+        assertNull(db.studySessionDao().getById(first))
+
+        repository.start(subjectName = null, now = 10 * MIN)
+        repository.continueAfterReboot(now = 20 * MIN)
+        assertEquals(20 * MIN, repository.recoveryAnsweredAt())
+        assertTrue(repository.runningSession.first() != null)
     }
 }
