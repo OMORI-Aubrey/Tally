@@ -33,15 +33,21 @@ data class ReclassifyNotice(val appLabel: String, val category: Category, val re
  *
  * 미분류 앱 질문에 답하거나 이탈 목록에서 허용으로 바꾸면(#16) 분류를 저장하고, 분류가 바뀌었으면 이 세션을 다시 계산한 뒤
  * 리포트를 다시 읽는다.
+ *
+ * @param hasPermission 사용 기록 접근 권한이 지금 켜져 있는지. 타임라인 없는 세션의 권한 유도 배너가 쓴다(#20)
  */
 class SessionReportViewModel(
     private val sessionId: Long,
     private val sessions: SessionRepository,
+    private val hasPermission: () -> Boolean,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<SessionReportUiState>(SessionReportUiState.Loading)
     val uiState: StateFlow<SessionReportUiState> = _uiState.asStateFlow()
+
+    private val _permissionGranted = MutableStateFlow(hasPermission())
+    val permissionGranted: StateFlow<Boolean> = _permissionGranted.asStateFlow()
 
     /** 답을 처리하는 동안 다른 답을 받지 않는다(연타, 두 앱 연달아) */
     private var answering = false
@@ -60,6 +66,14 @@ class SessionReportViewModel(
         }
     }
 
+    /**
+     * 화면이 보일 때마다 부른다. 권한은 결과 콜백이 없어 설정에서 돌아올 때 다시 확인한다(§6.4).
+     * 켜져도 이 세션은 다시 계산하지 않는다 — 배너가 다음 세션부터 보인다고 알린다(PLAN.md §4)
+     */
+    fun refreshPermission() {
+        _permissionGranted.value = hasPermission()
+    }
+
     private suspend fun load(notice: ReclassifyNotice?): SessionReportUiState {
         val data = sessions.loadReport(sessionId) ?: return SessionReportUiState.Missing
         return SessionReportUiState.Ready(buildSessionReport(data, zone()), notice)
@@ -67,7 +81,10 @@ class SessionReportViewModel(
 
     companion object {
         fun factory(sessionId: Long): ViewModelProvider.Factory = viewModelFactory {
-            initializer { SessionReportViewModel(sessionId, appContainer.sessionRepository) }
+            initializer {
+                val container = appContainer
+                SessionReportViewModel(sessionId, container.sessionRepository, container.usageEventSource::hasPermission)
+            }
         }
     }
 }

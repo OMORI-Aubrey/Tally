@@ -29,9 +29,9 @@ data class SessionReport(
     val totals: Totals,
     /** ④ 타임라인이 없으면 null */
     val cards: MetricCards?,
-    /** ⑤ 시각 순. 이탈이 없으면 비어 있다 */
+    /** ⑤ 시각 순. 이탈이 없거나 타임라인이 없으면 비어 있다 */
     val distractions: List<Distraction>,
-    /** ⑥ 아직 사용자가 정하지 않은 딴짓 앱. 세션당 최대 2개 */
+    /** ⑥ 아직 사용자가 정하지 않은 딴짓 앱. 세션당 최대 2개. 타임라인이 없으면 비어 있다 */
     val unclassified: List<UnclassifiedApp>,
     /** ⑦ */
     val meta: SessionMeta,
@@ -152,7 +152,8 @@ internal fun buildSessionReport(data: SessionReportData, zone: ZoneId): SessionR
         null
     }
 
-    val distractSegments = data.segments.filter { it.category == Category.DISTRACT }
+    // 이탈 목록·미분류 앱 질문은 권한 허용 시에만(§8.2). 사용 기록 권한 없이 끝낸 세션에는 구간이 없지만 그래도 보이지 않게 한다
+    val distractSegments = if (timeline) data.segments.filter { it.category == Category.DISTRACT } else emptyList()
     val distractions = distractSegments.map { segment ->
         val app = segment.packageName.takeIf { it != PseudoPackage.SCREEN_ON_UNKNOWN }
         Distraction(

@@ -125,6 +125,22 @@ class SessionReportTest {
     }
 
     @Test
+    fun `타임라인이 없으면 구간이 있어도 스트립·이탈 목록·미분류 질문을 두지 않는다`() {
+        val report = report(
+            session(timeline = false),
+            segments = listOf(
+                segment("com.jaeyun.tally", Category.ALLOWED, 0, 60),
+                segment(YOUTUBE, Category.DISTRACT, 60, 98),
+            ),
+            classifications = listOf(auto(YOUTUBE, "YouTube")),
+        )
+
+        assertNull(report.strip)
+        assertTrue(report.distractions.isEmpty())
+        assertTrue(report.unclassified.isEmpty())
+    }
+
+    @Test
     fun `지표 카드는 밀도를 버리고 세션 길이는 타이머 길이다`() {
         // 자리 비움으로 착석(80분)이 타이머 길이(98분)보다 짧다
         val cards = report(session(totalMin = 80, lengthMin = 98, density = 89.8f)).cards!!
