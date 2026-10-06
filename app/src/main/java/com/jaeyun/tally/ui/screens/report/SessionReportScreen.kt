@@ -1,5 +1,7 @@
 package com.jaeyun.tally.ui.screens.report
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -17,8 +19,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
@@ -30,6 +34,7 @@ import com.jaeyun.tally.ui.components.MetricCard
 import com.jaeyun.tally.ui.components.NoteSectionTitle
 import com.jaeyun.tally.ui.components.NoteTopBar
 import com.jaeyun.tally.ui.components.NotebookPaper
+import com.jaeyun.tally.ui.components.PermissionBanner
 import com.jaeyun.tally.ui.components.StructureHeadline
 import com.jaeyun.tally.ui.components.TimelineStrip
 import com.jaeyun.tally.ui.components.TotalsRow
@@ -45,6 +50,9 @@ import java.time.format.DateTimeFormatter
  * ⑥ 미분류 앱 질문 → ⑦ 메타. 무게중심은 ⓪과 ①이고 나머지는 스크롤해서 본다. ⓪이 없으면 ①이 맨 위가 된다.
  * 이탈 목록의 앱은 길게 눌러 허용으로 바꿀 수 있고(#16), 바꾸면 이 세션을 다시 계산한다(§5.1).
  *
+ * 사용 기록 권한 없이 끝낸 세션은 ①·④·⑤가 없고 ② 자리에 권한 유도 배너를 둔다(§8.2, §8.5.1). 배너는 화면이 보일 때마다
+ * 권한을 다시 확인해, 설정에서 켜고 돌아오면 다음 세션부터 보인다는 한 줄로 바뀐다.
+ *
  * 판정·목표는 주 단위라 이 화면에 두지 않는다. 문구는 원인을 단정하지 않는다(§5.5).
  *
  * @param onClose 닫기. 뒤로가기와 같다
@@ -57,6 +65,12 @@ fun SessionReportScreen(
     viewModel: SessionReportViewModel = viewModel(factory = SessionReportViewModel.factory(sessionId)),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val permissionGranted by viewModel.permissionGranted.collectAsStateWithLifecycle()
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refreshPermission()
+        onPauseOrDispose { }
+    }
+    val context = LocalContext.current
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -72,7 +86,13 @@ fun SessionReportScreen(
                 color = PencilSoft,
                 modifier = Modifier.padding(top = 24.dp),
             )
-            is SessionReportUiState.Ready -> ReportBody(state, onReclassify = viewModel::reclassify)
+            is SessionReportUiState.Ready -> ReportBody(
+                state = state,
+                permissionGranted = permissionGranted,
+                onReclassify = viewModel::reclassify,
+                // 앱을 지정해 열 수 없어 설치된 앱 전체 목록이 열린다(§6.4)
+                onOpenSettings = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)) },
+            )
         }
     }
 }
@@ -83,7 +103,9 @@ private val DateFormat = DateTimeFormatter.ofPattern("M/d")
 @Composable
 private fun ColumnScope.ReportBody(
     state: SessionReportUiState.Ready,
+    permissionGranted: Boolean,
     onReclassify: (packageName: String, appLabel: String, category: Category) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val report = state.report
 
@@ -103,6 +125,11 @@ private fun ColumnScope.ReportBody(
             isNewRecord = structure.record == RecordMark.NewRecord,
         )
     }
+    // 구조 헤드라인이 없으면 사용 기록 권한 없이 끝낸 세션이다. 스트립 자리에 권한 유도 배너를 둔다
+    if (report.structure == null) {
+        Spacer(Modifier.height(24.dp))
+        PermissionBanner(permissionGranted = permissionGranted, onOpenSettings = onOpenSettings)
+    }
     report.strip?.let { segments ->
         Spacer(Modifier.height(24.dp))
         NoteSectionTitle(stringResource(R.string.timeline_title))
@@ -116,15 +143,6 @@ private fun ColumnScope.ReportBody(
 
     Spacer(Modifier.height(24.dp))
     TotalsRow(focusSec = report.totals.focusSec, sittingSec = report.totals.sittingSec, distractSec = report.totals.distractSec)
-    // TODO(#20) 권한 유도 배너로 바꾼다
-    if (report.structure == null) {
-        Text(
-            stringResource(R.string.report_no_timeline),
-            style = MaterialTheme.typography.bodyMedium,
-            color = PencilSoft,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-    }
 
     report.cards?.let { cards ->
         Spacer(Modifier.height(24.dp))
