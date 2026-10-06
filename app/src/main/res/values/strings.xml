@@ -91,6 +91,10 @@
     <string name="totals_sitting">공부 %1$s</string>
     <string name="totals_sitting_distract">%1$s · 딴짓 %2$s</string>
     <string name="report_no_timeline">이 세션은 사용 기록 없이 공부 시간만 남았어요</string>
+    <!-- 권한 유도 배너 (§8.2 ②). 켜도 이 세션은 다시 계산하지 않는다 (PLAN.md §4) -->
+    <string name="permission_banner_benefit">사용 기록 접근을 켜면 다음 세션부터 끊긴 구간과 딴짓한 순간이 보여요</string>
+    <string name="permission_banner_on">지금은 켜져 있어요. 다음 세션부터 끊긴 구간과 딴짓한 순간이 보여요</string>
+    <string name="permission_banner_open">권한 설정하기</string>
     <string name="card_density">집중 밀도</string>
     <string name="card_density_value">%1$d%%</string>
     <string name="card_length">세션 길이</string>
