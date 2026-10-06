@@ -35,6 +35,13 @@ data class AppSettings(
      * 건너뛰면 세션에 값이 남지 않아서 물었다는 사실을 따로 둔다 (PLAN.md §4)
      */
     val perceivedAskedAt: Long? = null,
+    /**
+     * 재부팅 뒤 미완료 세션 복구 질문에 `[이어서 기록]`으로 답한 시각 (§6.3 #5, #21). 같은 재부팅을 다시 묻지 않도록
+     * 이 시각보다 뒤에 재부팅했을 때만 묻는다
+     */
+    val recoveryAnsweredAt: Long? = null,
+    /** 임시(#21): 화면 꺼짐 확인 다이얼로그(①) 기준을 60분에서 1분으로 낮춘다. debug 빌드에서만 효과가 있다 */
+    val quickScreenOffCheck: Boolean = false,
 )
 
 /** 파일 하나당 인스턴스가 하나여야 하므로 `AppContainer`에서만 만든다 */
@@ -50,6 +57,8 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
                 addedSubjects = decodeAdded(prefs[ADDED_SUBJECTS].orEmpty()),
                 relaxedBaseline = prefs[RELAXED_BASELINE] ?: false,
                 perceivedAskedAt = prefs[PERCEIVED_ASKED_AT],
+                recoveryAnsweredAt = prefs[RECOVERY_ANSWERED_AT],
+                quickScreenOffCheck = prefs[QUICK_SCREEN_OFF_CHECK] ?: false,
             )
         }
 
@@ -106,6 +115,14 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         }
     }
 
+    suspend fun setRecoveryAnsweredAt(answeredAt: Long) {
+        dataStore.edit { it[RECOVERY_ANSWERED_AT] = answeredAt }
+    }
+
+    suspend fun setQuickScreenOffCheck(enabled: Boolean) {
+        dataStore.edit { it[QUICK_SCREEN_OFF_CHECK] = enabled }
+    }
+
     companion object {
         private const val FILE_NAME = "settings"
 
@@ -115,6 +132,8 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         private val RELAXED_BASELINE = booleanPreferencesKey("relaxedBaseline")
         private val ADDED_SUBJECTS = stringSetPreferencesKey("addedSubjects")
         private val PERCEIVED_ASKED_AT = longPreferencesKey("perceivedAskedAt")
+        private val RECOVERY_ANSWERED_AT = longPreferencesKey("recoveryAnsweredAt")
+        private val QUICK_SCREEN_OFF_CHECK = booleanPreferencesKey("quickScreenOffCheck")
 
         // "추가시각\t이름"으로 저장한다. 과목 이름은 공백을 정리해 넣으므로 탭이 남지 않는다(SubjectName.normalize)
         private const val ADDED_SEPARATOR = '\t'

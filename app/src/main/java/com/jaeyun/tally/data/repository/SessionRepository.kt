@@ -2,6 +2,7 @@ package com.jaeyun.tally.data.repository
 
 import android.util.Log
 import androidx.room.withTransaction
+import com.jaeyun.tally.data.datastore.AppSettingsStore
 import com.jaeyun.tally.data.room.AppClassification
 import com.jaeyun.tally.data.room.AppSegment
 import com.jaeyun.tally.data.room.ClassificationSource
@@ -13,10 +14,16 @@ import com.jaeyun.tally.data.usagestats.UsageQueryResult
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.RawEvent
 import com.jaeyun.tally.domain.model.RawEventType
+import com.jaeyun.tally.domain.model.Segment
+import com.jaeyun.tally.domain.reconstructor.LONG_SCREEN_OFF_MILLIS
+import com.jaeyun.tally.domain.reconstructor.ReconstructedTimeline
 import com.jaeyun.tally.domain.reconstructor.TimelineReconstructor
+import com.jaeyun.tally.domain.reconstructor.longScreenOffSegments
+import com.jaeyun.tally.domain.reconstructor.markAway
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /** 세션 리포트(§8.2)를 그릴 재료. 판정·기준선은 들어 있지 않다 */
@@ -46,18 +53,23 @@ enum class ReclassifyResult {
  * 세션 시작·종료 (§6.3 #5). 진행 중 세션은 동시에 하나만 둔다.
  *
  * 종료하면 사용 기록을 한 번 조회해 타임라인을 복원하고 지표를 계산해 저장한다(§3.3, #12).
+ * 리포트 전에 묻는 두 가지(① 긴 화면 꺼짐, ② 180분 초과)의 답을 저장하고, 재부팅 뒤 미완료 세션(③)을 처리한다(#21).
  * 리포트에서 앱 분류를 바꾸면 그 세션을 다시 조회해 다시 계산한다(§5.1, PLAN.md §4 재분류 소급 범위).
  *
+ * @param settings ③ 재부팅 복구 질문에 답한 시각을 둔다
  * @param selfPackage 본 앱 패키지. 복원의 seed 구간이고 분류는 항상 허용이다
  * @param strictInvariant 복원 불변식이 깨지면 예외를 던질지. debug 빌드에서 켠다
+ * @param longScreenOffMillis ① 화면 꺼짐 확인 기준. debug 빌드는 프로브에서 1분으로 낮춰 시험할 수 있다(임시, #21)
  */
 class SessionRepository(
     private val database: TallyDatabase,
     private val usageEvents: UsageEventQuery,
     private val classifier: AppAutoClassifier,
+    private val settings: AppSettingsStore,
     private val selfPackage: String,
     private val strictInvariant: Boolean,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val longScreenOffMillis: suspend () -> Long = { LONG_SCREEN_OFF_MILLIS },
 ) {
 
     private val dao = database.studySessionDao()
@@ -108,6 +120,62 @@ class SessionRepository(
         }
     }
 
+    /**
+     * ① 화면 꺼짐 단일 구간이 60분([longScreenOffMillis])을 넘는 것(§6.3 #6). 시각 순. 리포트 전에 하나씩 묻는다.
+     * 타임라인이 없으면 비어 있다
+     */
+    suspend fun longScreenOffs(sessionId: Long): List<Segment> =
+        segmentDao.getBySession(sessionId).map { it.toSegment() }.longScreenOffSegments(longScreenOffMillis())
+
+    /**
+     * ① `[자리 비웠어요]`. 그 화면 꺼짐 구간을 자리 비움으로 바꾸고 지표를 다시 계산한다(§6.3 #6). 자리 비움은 착석·순공에서
+     * 빠지고 최장 구간 연속을 끊는다. 저장된 구간에서 분류만 바꾸므로 사용 기록을 다시 조회하지 않는다.
+     * 통계 포함 여부도 자리 비움을 뺀 착석으로 다시 정한다(PLAN.md §4). 끝나지 않았거나 없는 세션이면 null,
+     * 그런 구간이 없으면 바꾸지 않고 그대로 돌려준다.
+     */
+    suspend fun markAway(sessionId: Long, startAt: Long, endAt: Long): StudySession? = database.withTransaction {
+        val session = dao.getById(sessionId) ?: return@withTransaction null
+        val sessionEnd = session.endAt ?: return@withTransaction null
+        val segments = segmentDao.getBySession(sessionId).map { it.toSegment() }
+        val marked = segments.markAway(startAt, endAt)
+        if (marked == segments) return@withTransaction session
+
+        val timeline = ReconstructedTimeline(marked, TimelineReconstructor.checkInvariant(marked, session.startAt, sessionEnd))
+        val completed = completeSession(session, sessionEnd, timeline, strictInvariant) { Log.w(TAG, it) }
+        dao.update(completed.session)
+        segmentDao.deleteBySession(sessionId)
+        segmentDao.insertAll(completed.segments)
+        completed.session
+    }
+
+    /**
+     * ② 착석이 180분을 넘은 세션에 답했다(§6.3 #4). `[종료를 잊었어요]`면 통계에서 빼고, `[계속 공부했어요]`면 길이 기준만
+     * 풀어 통계에 넣는다. 기록은 어느 쪽이든 남는다. 타임라인 불변식이 깨진 세션은 계속 뺀다(§6.2.2).
+     * 끝나지 않았거나 없는 세션이면 null.
+     */
+    suspend fun answerOverLong(sessionId: Long, forgotToFinish: Boolean): StudySession? = database.withTransaction {
+        val session = dao.getById(sessionId) ?: return@withTransaction null
+        val sessionEnd = session.endAt ?: return@withTransaction null
+        val segments = segmentDao.getBySession(sessionId).map { it.toSegment() }
+        val intact = !session.hasTimeline || TimelineReconstructor.checkInvariant(segments, session.startAt, sessionEnd) == null
+        session.copy(isValidForStats = !forgotToFinish && intact).also { dao.update(it) }
+    }
+
+    /** ③ 재부팅 뒤 미완료 세션 질문에 마지막으로 `[이어서 기록]`이라고 답한 시각. 답한 적이 없으면 null */
+    suspend fun recoveryAnsweredAt(): Long? = settings.settings.first().recoveryAnsweredAt
+
+    /** ③ `[이어서 기록]`. 세션은 그대로 진행 중이고, 같은 재부팅을 다시 묻지 않도록 답한 시각만 남긴다 */
+    suspend fun continueAfterReboot(now: Long) {
+        settings.setRecoveryAnsweredAt(now)
+    }
+
+    /** ③ `[삭제]`. 끝나지 않은 세션만 지운다(진행 중 세션에는 구간이 없다) */
+    suspend fun deleteUnfinished(sessionId: Long) {
+        database.withTransaction {
+            dao.getById(sessionId)?.takeIf { it.endAt == null }?.let { dao.delete(it) }
+        }
+    }
+
     /** 리포트 재료. 끝나지 않았거나 없는 세션이면 null */
     suspend fun loadReport(sessionId: Long): SessionReportData? {
         val session = dao.getById(sessionId)?.takeIf { it.endAt != null } ?: return null
@@ -124,6 +192,8 @@ class SessionRepository(
      * 없어서다. 다시 조회한 기록을 지금까지의 분류로 복원해 저장된 구간과 같을 때만 계산한다 — 오래돼 기록이 지워졌거나
      * 일부만 남았으면 엉뚱한 숫자로 덮어쓰지 않고 분류만 저장한다([ReclassifyResult.SAVED_ONLY]).
      * 다른 세션은 다시 계산하지 않는다.
+     *
+     * ①에서 자리 비움으로 바꾼 구간과 ②에서 정한 통계 포함 여부는 분류와 관계없으므로 그대로 둔다(#21).
      */
     suspend fun reclassify(sessionId: Long, packageName: String, category: Category): ReclassifyResult {
         val existing = classificationDao.get(packageName)
@@ -146,19 +216,23 @@ class SessionRepository(
             return ReclassifyResult.SAVED_ONLY
         }
 
+        val stored = segmentDao.getBySession(sessionId)
+        // 자리 비움은 사용 기록에 없어 다시 복원하면 화면 꺼짐으로 나온다. 같은 자리에 다시 입힌다
+        val away = stored.filter { it.category == Category.AWAY }
+        fun ReconstructedTimeline.withAway() = copy(segments = away.fold(segments) { acc, a -> acc.markAway(a.startAt, a.endAt) })
+
         val before = storedClassifications(result.events)
-        val replayed = reconstruct(result.events, session.startAt, endAt, before)
-        if (!sameTimeline(replayed, segmentDao.getBySession(sessionId))) {
+        val replayed = reconstruct(result.events, session.startAt, endAt, before).withAway()
+        if (!sameTimeline(replayed, stored)) {
             classificationDao.upsert(userRow)
             return ReclassifyResult.SAVED_ONLY
         }
         val after: (String) -> Category = { pkg -> if (pkg == packageName) category else before(pkg) }
-        val completed = completeSession(session, endAt, reconstruct(result.events, session.startAt, endAt, after), strictInvariant) {
-            Log.w(TAG, it)
-        }
+        val recomputed = reconstruct(result.events, session.startAt, endAt, after).withAway()
+        val completed = completeSession(session, endAt, recomputed, strictInvariant) { Log.w(TAG, it) }
         database.withTransaction {
             classificationDao.upsert(userRow)
-            dao.update(completed.session)
+            dao.update(completed.session.copy(isValidForStats = session.isValidForStats))
             segmentDao.deleteBySession(sessionId)
             segmentDao.insertAll(completed.segments)
         }

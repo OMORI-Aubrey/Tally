@@ -67,6 +67,13 @@
     <string name="probe_perceived_counts">후보 세션 %1$d개 · 답한 세션 %2$d개 · 다음 후보 세션은 %3$d번째</string>
     <string name="probe_perceived_clear">이번 주 체감 기록 지우기</string>
 
+    <!-- 임시(#21) -->
+    <string name="probe_section_screen_off_check">화면 꺼짐 확인 다이얼로그 (임시: 기준 낮추기)</string>
+    <string name="probe_screen_off_check_quick">화면이 1분 넘게 꺼진 구간을 묻는다</string>
+    <string name="probe_screen_off_check_normal">화면이 60분 넘게 꺼진 구간을 묻는다 (기본)</string>
+    <string name="probe_screen_off_check_hint">다음에 끝내는 세션부터 적용된다. 시험을 마치면 다시 끈다</string>
+    <string name="probe_screen_off_check_toggle">기준을 1분으로 낮추기</string>
+
     <string name="probe_section_onboarding">온보딩 (#19)</string>
     <string name="probe_onboarding_done">온보딩 마침</string>
     <string name="probe_onboarding_not_done">온보딩 안 마침 — 본 앱을 새로 열면 온보딩부터 나옴</string>

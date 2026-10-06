@@ -3,6 +3,7 @@ package com.jaeyun.tally.data.repository
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.domain.metrics.MetricsVersion
 import com.jaeyun.tally.domain.model.Category.ALLOWED
+import com.jaeyun.tally.domain.model.Category.AWAY
 import com.jaeyun.tally.domain.model.Category.DISTRACT
 import com.jaeyun.tally.domain.model.Segment
 import com.jaeyun.tally.domain.reconstructor.ReconstructedTimeline
@@ -69,6 +70,24 @@ class SessionCompletionTest {
 
         assertEquals(MetricsVersion.CURRENT, done.session.metricsVersion)
         assertFalse(done.session.isValidForStats)
+    }
+
+    @Test
+    fun `통계 포함 여부는 자리 비움을 뺀 착석으로 정한다`() {
+        // 4시간 세션 중 2시간 30분을 자리 비움으로 바꿨다. 착석 1시간 30분이라 통계에 들어간다
+        val done = completeSession(
+            session,
+            now = 240 * MIN,
+            timeline = timeline(
+                Segment("self", ALLOWED, 0, 60 * MIN),
+                Segment("off", AWAY, 60 * MIN, 210 * MIN),
+                Segment("self", ALLOWED, 210 * MIN, 240 * MIN),
+            ),
+            strictInvariant = true,
+        ) {}
+
+        assertEquals(90 * 60, done.session.tTotalSec)
+        assertTrue(done.session.isValidForStats)
     }
 
     @Test

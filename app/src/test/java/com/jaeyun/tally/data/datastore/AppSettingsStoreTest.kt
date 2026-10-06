@@ -66,6 +66,25 @@ class AppSettingsStoreTest {
     }
 
     @Test
+    fun `재부팅 복구 질문에 답한 시각을 남긴다`() = runTest {
+        val store = store()
+        store.setRecoveryAnsweredAt(2_000)
+
+        assertEquals(2_000L, store.settings.first().recoveryAnsweredAt)
+    }
+
+    @Test
+    fun `화면 꺼짐 확인 기준 낮추기는 꺼진 채로 시작하고 켜고 끌 수 있다`() = runTest {
+        val store = store()
+        assertEquals(false, store.settings.first().quickScreenOffCheck)
+
+        store.setQuickScreenOffCheck(true)
+        assertEquals(true, store.settings.first().quickScreenOffCheck)
+        store.setQuickScreenOffCheck(false)
+        assertEquals(false, store.settings.first().quickScreenOffCheck)
+    }
+
+    @Test
     fun `과목 숨기기와 되돌리기`() = runTest {
         val store = store()
         store.setSubjectHidden("수햑", hidden = true)
