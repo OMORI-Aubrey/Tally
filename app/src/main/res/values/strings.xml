@@ -191,6 +191,8 @@
 
     <!-- 시간 표기 (PLAN.md §4). 세션 단위는 한글, 주간·누적 총량은 h m -->
     <string name="duration_seconds">%1$d초</string>
+    <!-- 초 단위에서 버려 0초가 된 길이. 0을 보이지 않는다 (§8.5.1, PLAN.md §4) -->
+    <string name="duration_under_second">1초 미만</string>
     <string name="duration_minutes">%1$d분</string>
     <string name="duration_hours">%1$d시간</string>
     <string name="duration_hours_minutes">%1$d시간 %2$d분</string>

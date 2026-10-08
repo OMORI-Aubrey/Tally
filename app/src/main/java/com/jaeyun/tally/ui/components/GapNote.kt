@@ -35,7 +35,9 @@ import com.jaeyun.tally.ui.theme.TallyTheme
 @Composable
 fun GapNote(perceivedMin: Int, focusSec: Int, gapPct: Int, lfsSec: Int, modifier: Modifier = Modifier) {
     TapedNote(modifier) {
-        GapRow(stringResource(R.string.gap_perceived), sessionDurationText(perceivedMin * 60L))
+        // 체감 0분은 사용자가 적은 답이라 그대로 쓴다(PLAN.md §4). 아직 없는 것을 세는 0과 다르다
+        val perceived = if (perceivedMin == 0) stringResource(R.string.duration_minutes, 0) else sessionDurationText(perceivedMin * 60L)
+        GapRow(stringResource(R.string.gap_perceived), perceived)
         GapRow(stringResource(R.string.gap_measured), stringResource(R.string.focus_max, sessionDurationText(focusSec.toLong())))
         Spacer(Modifier.height(8.dp))
         GapMark(gapPct)

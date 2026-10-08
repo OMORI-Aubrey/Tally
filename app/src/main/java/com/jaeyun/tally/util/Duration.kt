@@ -14,7 +14,7 @@ sealed interface DurationParts {
 
 /**
  * 1분 미만은 초, 1시간 미만은 분, 그 이상은 시간과 분(분이 0이면 시간만). 남는 초와 분은 버린다.
- * 버림이라 "순공 최대"가 실제보다 커지지 않는다. 0초는 0으로 본다 — 0을 화면에 보일지는 화면이 정한다(§8.5.1).
+ * 버림이라 "순공 최대"가 실제보다 커지지 않는다. 0초는 0으로 본다 — 세션 단위 표기는 `1초 미만`으로 쓴다(§8.5.1).
  */
 fun durationParts(totalSeconds: Long): DurationParts {
     val sec = totalSeconds.coerceAtLeast(0)
