@@ -80,7 +80,7 @@ private fun SessionList(state: RecordsUiState.Content, onOpenSession: (Long) -> 
                     color = PencilSoft,
                     modifier = Modifier.weight(1f),
                 )
-                // TODO(P2) 지표를 계산한 세션이 생기면 순공 최대로 바꾼다
+                // 착석(T_total)을 "공부"로 쓴다 (PLAN.md §4 착석 표기)
                 Text(stringResource(R.string.records_sitting_column), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
             }
         }
@@ -96,7 +96,6 @@ private fun SessionList(state: RecordsUiState.Content, onOpenSession: (Long) -> 
                 SessionListItem(
                     startTime = row.startTime.format(TimeFormat),
                     subjectName = row.subjectName,
-                    // TODO(P2) 지표를 계산한 세션은 순공 최대·집중 밀도로 바꾼다(§8.4 세션 목록)
                     summary = sessionDurationText(row.sessionSec.toLong()),
                     excludedFromStats = !row.validForStats,
                     modifier = Modifier.clickable(onClickLabel = stringResource(R.string.records_open_report)) { onOpenSession(row.id) },
