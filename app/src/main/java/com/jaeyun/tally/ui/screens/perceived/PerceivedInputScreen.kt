@@ -38,10 +38,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
-import com.jaeyun.tally.ui.components.NumberBlank
-import com.jaeyun.tally.ui.components.NotebookPaper
-import com.jaeyun.tally.ui.components.SketchBoxButton
-import com.jaeyun.tally.ui.components.sessionDurationText
+import com.jaeyun.tally.ui.components.control.NumberBlank
+import com.jaeyun.tally.ui.components.control.SketchBoxButton
+import com.jaeyun.tally.ui.components.notebook.NotebookPaper
+import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft
 

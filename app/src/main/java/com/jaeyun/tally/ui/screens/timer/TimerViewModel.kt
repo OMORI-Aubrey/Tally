@@ -15,7 +15,7 @@ import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.domain.metrics.SessionValidity
 import com.jaeyun.tally.domain.model.SubjectName
-import com.jaeyun.tally.ui.components.WeeklySummary
+import com.jaeyun.tally.ui.components.timer.WeeklySummary
 import com.jaeyun.tally.util.WeekRange
 import com.jaeyun.tally.util.weekRangeOf
 import kotlinx.coroutines.CompletableDeferred

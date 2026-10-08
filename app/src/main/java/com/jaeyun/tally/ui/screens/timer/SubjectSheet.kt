@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
 import com.jaeyun.tally.data.repository.SubjectSummary
 import com.jaeyun.tally.domain.model.SubjectName
-import com.jaeyun.tally.ui.components.EmptyState
-import com.jaeyun.tally.ui.components.SubjectListItem
+import com.jaeyun.tally.ui.components.feedback.EmptyState
+import com.jaeyun.tally.ui.components.timer.SubjectListItem
 import com.jaeyun.tally.ui.theme.Pencil
 
 /**

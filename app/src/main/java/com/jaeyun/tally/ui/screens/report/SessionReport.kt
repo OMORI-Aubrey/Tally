@@ -7,8 +7,8 @@ import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.domain.metrics.MetricsCalculator
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
-import com.jaeyun.tally.ui.components.TimelineKind
-import com.jaeyun.tally.ui.components.TimelineSegment
+import com.jaeyun.tally.ui.components.report.TimelineKind
+import com.jaeyun.tally.ui.components.report.TimelineSegment
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime

@@ -47,7 +47,13 @@ com.jaeyun.tally
 ├── TallyApplication, AppContainer, MainActivity
 ├── ui/
 │   ├── theme/        TallyTheme
-│   ├── components/   공용 컴포저블 (타임라인 스트립 등)
+│   ├── components/   공용 컴포저블. 아래 하위 패키지에만 둔다
+│   │   ├── notebook/     노트 바탕·꾸밈 (NotebookPaper, TapedNote, HighlightedText, NoteTopBar …)
+│   │   ├── text/         시간·숫자 표기 (DurationText, TabularDigitsText)
+│   │   ├── control/      버튼·입력·탭 (SketchButtons, SketchSlider, NumberBlank, IndexTabBar)
+│   │   ├── feedback/     다이얼로그·빈 상태 (TallyDialog, EmptyState)
+│   │   ├── permission/   권한 안내 (PermissionSteps, PermissionBanner)
+│   │   └── timer/ report/ records/ settings/   한 화면에서만 쓰는 것. 이름은 screens/와 맞춘다
 │   └── screens/      화면별 Screen + ViewModel
 ├── domain/           Android 의존성 없는 순수 Kotlin
 │   ├── model/
@@ -78,6 +84,7 @@ com.jaeyun.tally
 ## UI 규칙
 
 - 컴포넌트 기반으로 개발한다. 재사용 가능한 단위는 `ui/components/`로 분리하고, 새로 만들기 전에 기존 컴포넌트를 먼저 찾아 재사용한다.
+- 컴포넌트는 `ui/components/`의 하위 패키지에 둔다(바로 아래에는 파일을 두지 않는다). 여러 화면이 함께 쓰면 역할별 패키지(`notebook`·`text`·`control`·`feedback`·`permission`), 한 화면에서만 쓰면 그 화면 이름의 패키지(`timer`·`report`·`records`·`settings`, `ui/screens/`와 같은 이름)에 둔다. 다른 화면도 쓰게 되면 역할별 패키지로 옮긴다. 맞는 패키지가 없으면 사용자에게 먼저 묻는다.
 - 컴포넌트는 `@Preview`를 만든다. 스크린은 실기기로만 테스트하므로 `@Preview`를 만들지 않는다.
 - 색은 `ui/theme/Color.kt`, 텍스트 스타일은 `ui/theme/Type.kt`에 있는 것만 쓴다. 임의의 `Color(...)`, `TextStyle(...)`, `fontSize`를 코드에 직접 쓰지 않는다.
 - `Color.kt`, `Type.kt`에 항목을 임의로 추가하지 않는다. 필요하면 사용자에게 먼저 묻는다.

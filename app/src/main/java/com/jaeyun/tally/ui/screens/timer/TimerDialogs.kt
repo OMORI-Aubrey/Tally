@@ -3,9 +3,9 @@ package com.jaeyun.tally.ui.screens.timer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.jaeyun.tally.R
-import com.jaeyun.tally.ui.components.TallyDialog
-import com.jaeyun.tally.ui.components.TallyDialogChoice
-import com.jaeyun.tally.ui.components.sessionDurationText
+import com.jaeyun.tally.ui.components.feedback.TallyDialog
+import com.jaeyun.tally.ui.components.feedback.TallyDialogChoice
+import com.jaeyun.tally.ui.components.text.sessionDurationText
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

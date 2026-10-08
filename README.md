@@ -161,6 +161,8 @@ UseCase 계층은 두지 않습니다. 알고리즘 성격이 강한 6개만 도
 com.jaeyun.tally
 ├── TallyApplication, AppContainer, MainActivity
 ├── ui/        theme, components(공용 컴포저블, 모두 @Preview), screens(화면별 Screen + ViewModel)
+│              components는 역할별(notebook, text, control, feedback, permission)과
+│              화면별(timer, report, records, settings) 하위 패키지로 나뉜다
 ├── domain/    model, reconstructor, metrics, baseline, verdict, goal, report
 ├── data/      room, usagestats, datastore, repository
 └── util/      주 범위, 시간 표기, 조사 등

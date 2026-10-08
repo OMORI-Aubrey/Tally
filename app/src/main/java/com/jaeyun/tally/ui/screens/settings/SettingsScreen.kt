@@ -12,8 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
-import com.jaeyun.tally.ui.components.NotebookPaper
-import com.jaeyun.tally.ui.components.SettingsEntryRow
+import com.jaeyun.tally.ui.components.notebook.NotebookPaper
+import com.jaeyun.tally.ui.components.settings.SettingsEntryRow
 import com.jaeyun.tally.ui.theme.PencilSoft
 
 /**

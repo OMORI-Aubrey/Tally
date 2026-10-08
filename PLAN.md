@@ -31,7 +31,7 @@
 | 항목 | 위치 | 내용 |
 |---|---|---|
 | 주 범위 | `util/` | **월요일 00:00(로컬 시간대) 시작** 주의 `[start, end)` epoch millis. 현재 시각은 인자로 받는다 |
-| 시간 표기 | `util/Duration`, `ui/components/DurationText` | 세션 단위는 한글(`40초`, `25분`, `2시간`, `1시간 28분`), 주·누적 총량은 `h m`(`21h 24m`). 남는 분·초는 버린다(§4) |
+| 시간 표기 | `util/Duration`, `ui/components/text/DurationText` | 세션 단위는 한글(`40초`, `25분`, `2시간`, `1시간 28분`), 주·누적 총량은 `h m`(`21h 24m`). 남는 분·초는 버린다(§4) |
 | UI 문구 | `res/values/strings.xml` | 문구는 전부 리소스로 둔다. 인과 서술 금지(§5.5), 톤 규칙(§5.6), 0 표시 금지(§8.5.1)를 지킨다 |
 | 디자인 토큰 | `ui/theme/Color.kt`, `Type.kt` | 종이 노트 콘셉트(§4). 색 21개(종이·필기구·꾸밈·구간 5종) + 손글씨 글꼴 2종(개구체, 나눔손글씨 펜체)으로 L1~L3 타이포를 Material 슬롯 9개에 대응. 항목 추가·변경은 사용자 승인 후 |
 
@@ -166,6 +166,7 @@
    - 앱 분류, 권한 상태, 데이터 전체 삭제(Room + DataStore 초기화, 확인 절차)
    - 개발자 영역(`BuildConfig.DEBUG`에서만 노출): CSV 내보내기(FileProvider + 시스템 공유), 데모 데이터 주입(5주 합성 세션), 기준선 완화 토글
    - 필요한 설정: `buildFeatures.buildConfig = true`, 매니페스트 FileProvider
+6. **#54 [refactor] `ui/components` 하위 패키지로 정리** — 컴포넌트 30개를 역할별(`notebook`·`text`·`control`·`feedback`·`permission`)과 화면별(`timer`·`report`·`records`·`settings`) 9개 패키지로 옮겼다. 동작 변경 없음. 새 컴포넌트를 둘 자리는 CLAUDE.md UI 규칙
 - 컴포넌트: `EmptyState`, `PermissionBanner`, `TallyDialog`, `SettingsRow`
 - 실기기: 권한 허용 흐름(§14.1.1 기록 항목), 강제 종료·재부팅 후 복구
 
