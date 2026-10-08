@@ -16,6 +16,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.components.AppClassificationListItem
+import com.jaeyun.tally.ui.components.EmptyState
 import com.jaeyun.tally.ui.components.NoteTopBar
 import com.jaeyun.tally.ui.components.NotebookPaper
 import com.jaeyun.tally.ui.theme.PencilSoft
@@ -44,7 +45,7 @@ fun AppClassificationScreen(
         when (val state = uiState) {
             AppClassificationUiState.Loading -> Unit
             AppClassificationUiState.Empty -> item {
-                Text(stringResource(R.string.app_class_empty), style = MaterialTheme.typography.bodyLarge, color = PencilSoft, modifier = Modifier.padding(top = 24.dp))
+                EmptyState(stringResource(R.string.app_class_empty), Modifier.padding(top = 48.dp))
             }
             is AppClassificationUiState.Content -> {
                 item {

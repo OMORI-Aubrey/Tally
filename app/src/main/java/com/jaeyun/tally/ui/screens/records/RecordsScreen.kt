@@ -16,11 +16,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.EmptyState
 import com.jaeyun.tally.ui.components.HighlightedText
 import com.jaeyun.tally.ui.components.NotebookPaper
 import com.jaeyun.tally.ui.components.SessionListItem
@@ -59,12 +59,7 @@ private fun RecordsEmpty(modifier: Modifier = Modifier) {
             .padding(start = NotebookPaper.ContentStart, end = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = stringResource(R.string.records_empty),
-            style = MaterialTheme.typography.bodyLarge,
-            color = PencilSoft,
-            textAlign = TextAlign.Center,
-        )
+        EmptyState(stringResource(R.string.records_empty))
     }
 }
 
