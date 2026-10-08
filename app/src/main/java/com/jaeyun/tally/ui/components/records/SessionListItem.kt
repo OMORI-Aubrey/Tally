@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.records
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

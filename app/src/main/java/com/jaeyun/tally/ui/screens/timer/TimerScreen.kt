@@ -40,8 +40,8 @@ import com.jaeyun.tally.ui.components.notebook.HighlightedText
 import com.jaeyun.tally.ui.components.notebook.NotebookPaper
 import com.jaeyun.tally.ui.components.notebook.TallyLogo
 import com.jaeyun.tally.ui.components.text.TabularDigitsText
-import com.jaeyun.tally.ui.components.SubjectChipRow
-import com.jaeyun.tally.ui.components.WeeklySummaryLine
+import com.jaeyun.tally.ui.components.timer.SubjectChipRow
+import com.jaeyun.tally.ui.components.timer.WeeklySummaryLine
 import com.jaeyun.tally.ui.theme.BluePen
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft

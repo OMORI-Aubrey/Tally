@@ -1,7 +1,7 @@
 package com.jaeyun.tally.ui.screens.timer
 
 import com.jaeyun.tally.data.room.StudySession
-import com.jaeyun.tally.ui.components.WeeklySummary
+import com.jaeyun.tally.ui.components.timer.WeeklySummary
 import com.jaeyun.tally.util.weekRangeOf
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.report
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable

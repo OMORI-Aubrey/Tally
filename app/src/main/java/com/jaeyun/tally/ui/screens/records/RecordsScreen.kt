@@ -23,7 +23,7 @@ import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.components.feedback.EmptyState
 import com.jaeyun.tally.ui.components.notebook.HighlightedText
 import com.jaeyun.tally.ui.components.notebook.NotebookPaper
-import com.jaeyun.tally.ui.components.SessionListItem
+import com.jaeyun.tally.ui.components.records.SessionListItem
 import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.theme.PencilSoft
 import java.time.LocalDate

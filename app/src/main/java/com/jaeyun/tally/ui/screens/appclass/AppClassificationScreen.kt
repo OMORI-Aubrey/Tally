@@ -18,7 +18,7 @@ import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.components.feedback.EmptyState
 import com.jaeyun.tally.ui.components.notebook.NoteTopBar
 import com.jaeyun.tally.ui.components.notebook.NotebookPaper
-import com.jaeyun.tally.ui.components.AppClassificationListItem
+import com.jaeyun.tally.ui.components.settings.AppClassificationListItem
 import com.jaeyun.tally.ui.theme.PencilSoft
 
 /**

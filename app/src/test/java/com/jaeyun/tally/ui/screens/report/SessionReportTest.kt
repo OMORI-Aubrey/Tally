@@ -7,7 +7,7 @@ import com.jaeyun.tally.data.room.ClassificationSource
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
-import com.jaeyun.tally.ui.components.TimelineKind
+import com.jaeyun.tally.ui.components.report.TimelineKind
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
