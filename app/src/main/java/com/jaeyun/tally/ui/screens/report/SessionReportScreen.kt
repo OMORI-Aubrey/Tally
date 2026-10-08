@@ -29,6 +29,7 @@ import com.jaeyun.tally.R
 import com.jaeyun.tally.data.repository.ReclassifyResult
 import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.ui.components.DistractionListItem
+import com.jaeyun.tally.ui.components.EmptyState
 import com.jaeyun.tally.ui.components.GapNote
 import com.jaeyun.tally.ui.components.MetricCard
 import com.jaeyun.tally.ui.components.NoteSectionTitle
@@ -80,12 +81,7 @@ fun SessionReportScreen(
         NoteTopBar(stringResource(R.string.report_title), stringResource(R.string.report_close), onBack = onClose)
         when (val state = uiState) {
             SessionReportUiState.Loading -> Unit
-            SessionReportUiState.Missing -> Text(
-                stringResource(R.string.report_missing),
-                style = MaterialTheme.typography.bodyLarge,
-                color = PencilSoft,
-                modifier = Modifier.padding(top = 24.dp),
-            )
+            SessionReportUiState.Missing -> EmptyState(stringResource(R.string.report_missing), Modifier.padding(top = 48.dp))
             is SessionReportUiState.Ready -> ReportBody(
                 state = state,
                 permissionGranted = permissionGranted,

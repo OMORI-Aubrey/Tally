@@ -1,6 +1,5 @@
 package com.jaeyun.tally.ui.screens.timer
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
 import com.jaeyun.tally.data.repository.SubjectSummary
 import com.jaeyun.tally.domain.model.SubjectName
+import com.jaeyun.tally.ui.components.EmptyState
 import com.jaeyun.tally.ui.components.SubjectListItem
 import com.jaeyun.tally.ui.theme.Pencil
-import com.jaeyun.tally.ui.theme.PencilSoft
 
 /**
  * 과목 선택 시트 (§8.1.1, 와이어프레임 §2-C). 전체 목록(세션 많은 순) + 새 과목 입력. 독립 라우트가 아니다.
@@ -98,16 +97,11 @@ private const val MAX_HEIGHT_FRACTION = 0.6f
 
 @Composable
 private fun EmptySubjects() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(stringResource(R.string.subject_sheet_empty_title), style = MaterialTheme.typography.titleLarge, color = Pencil)
-        Text(stringResource(R.string.subject_sheet_empty_body), style = MaterialTheme.typography.bodyMedium, color = PencilSoft)
-    }
+    EmptyState(
+        message = stringResource(R.string.subject_sheet_empty_title),
+        detail = stringResource(R.string.subject_sheet_empty_body),
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 32.dp),
+    )
 }
 
 @Composable
