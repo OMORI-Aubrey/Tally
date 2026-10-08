@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.notebook
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme

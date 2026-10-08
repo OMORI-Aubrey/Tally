@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.feedback
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.control.SketchBoxButton
+import com.jaeyun.tally.ui.components.notebook.notebookPaper
 import com.jaeyun.tally.ui.theme.Paper
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft

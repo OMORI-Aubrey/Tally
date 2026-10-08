@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.control
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
@@ -28,6 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.notebook.notebookPaper
 import com.jaeyun.tally.ui.theme.HighlighterSoft
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilFaint

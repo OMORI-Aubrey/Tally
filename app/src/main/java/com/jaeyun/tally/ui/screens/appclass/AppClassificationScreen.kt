@@ -15,10 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.feedback.EmptyState
+import com.jaeyun.tally.ui.components.notebook.NoteTopBar
+import com.jaeyun.tally.ui.components.notebook.NotebookPaper
 import com.jaeyun.tally.ui.components.AppClassificationListItem
-import com.jaeyun.tally.ui.components.EmptyState
-import com.jaeyun.tally.ui.components.NoteTopBar
-import com.jaeyun.tally.ui.components.NotebookPaper
 import com.jaeyun.tally.ui.theme.PencilSoft
 
 /**

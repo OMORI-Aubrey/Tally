@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.control
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

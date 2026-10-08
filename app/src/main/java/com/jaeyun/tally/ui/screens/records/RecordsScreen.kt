@@ -20,11 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
-import com.jaeyun.tally.ui.components.EmptyState
-import com.jaeyun.tally.ui.components.HighlightedText
-import com.jaeyun.tally.ui.components.NotebookPaper
+import com.jaeyun.tally.ui.components.feedback.EmptyState
+import com.jaeyun.tally.ui.components.notebook.HighlightedText
+import com.jaeyun.tally.ui.components.notebook.NotebookPaper
 import com.jaeyun.tally.ui.components.SessionListItem
-import com.jaeyun.tally.ui.components.sessionDurationText
+import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.theme.PencilSoft
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter

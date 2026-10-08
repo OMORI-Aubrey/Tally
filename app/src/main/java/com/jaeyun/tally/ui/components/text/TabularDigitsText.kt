@@ -1,4 +1,4 @@
-package com.jaeyun.tally.ui.components
+package com.jaeyun.tally.ui.components.text
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -18,6 +18,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import com.jaeyun.tally.ui.components.notebook.notebookPaper
 import com.jaeyun.tally.ui.theme.BluePen
 import com.jaeyun.tally.ui.theme.TallyTheme
 import com.jaeyun.tally.util.formatElapsedClock

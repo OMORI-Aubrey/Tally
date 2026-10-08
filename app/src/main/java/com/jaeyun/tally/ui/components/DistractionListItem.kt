@@ -29,6 +29,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
+import com.jaeyun.tally.ui.components.notebook.NotebookPaper
+import com.jaeyun.tally.ui.components.notebook.notebookPaper
+import com.jaeyun.tally.ui.components.text.TabularDigitsText
+import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.theme.Paper
 import com.jaeyun.tally.ui.theme.Pencil
 import com.jaeyun.tally.ui.theme.PencilSoft

@@ -22,9 +22,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-import com.jaeyun.tally.ui.components.IndexTab
-import com.jaeyun.tally.ui.components.IndexTabBar
-import com.jaeyun.tally.ui.components.notebookPaper
+import com.jaeyun.tally.ui.components.control.IndexTab
+import com.jaeyun.tally.ui.components.control.IndexTabBar
+import com.jaeyun.tally.ui.components.notebook.notebookPaper
 import com.jaeyun.tally.ui.screens.appclass.AppClassificationScreen
 import com.jaeyun.tally.ui.screens.onboarding.OnboardingScreen
 import com.jaeyun.tally.ui.screens.perceived.PerceivedInputScreen
