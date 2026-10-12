@@ -94,6 +94,11 @@ private fun SettingsRowPreview() {
                 navigates = true,
             )
             SettingsRow(title = stringResource(R.string.settings_delete_all), onClick = {}, warning = true)
+            SettingsRow(
+                title = stringResource(R.string.settings_demo_data),
+                description = stringResource(R.string.settings_demo_data_blocked),
+                onClick = null,
+            )
         }
     }
 }

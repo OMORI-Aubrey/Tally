@@ -173,6 +173,18 @@
     <string name="settings_delete_all_dialog_detail">세션 기록과 앱 분류, 설정이 모두 지워지고 되돌릴 수 없어요</string>
     <string name="settings_delete_all_keep">그대로 두기</string>
     <string name="settings_delete_all_confirm">모두 지우기</string>
+    <!-- 개발자 영역. debug 빌드에서만 보인다 (§14.4) -->
+    <string name="settings_developer">개발자</string>
+    <string name="settings_export_csv">CSV 내보내기</string>
+    <string name="settings_export_csv_description">끝난 세션을 한 줄씩 CSV로 공유해요</string>
+    <string name="settings_export_csv_chooser">CSV 공유</string>
+    <string name="settings_demo_data">데모 데이터 주입</string>
+    <string name="settings_demo_data_description">지난 5주의 합성 세션을 넣어요. 발표 리허설용이에요</string>
+    <string name="settings_demo_data_blocked">기록이 있으면 넣지 않아요. CSV로 내보내고 전체 삭제한 뒤 넣을 수 있어요</string>
+    <string name="settings_demo_data_done">데모 데이터를 넣었어요. 지우려면 데이터 전체 삭제</string>
+    <string name="settings_relaxed_baseline">기준선 조건 완화</string>
+    <string name="settings_relaxed_baseline_on">켜짐 · 유효 세션 6개부터 기준선을 계산해요</string>
+    <string name="settings_relaxed_baseline_off">꺼짐 · 유효 세션 12개부터 기준선을 계산해요</string>
 
     <!-- 앱 분류 (§5.1, 와이어프레임 §7) -->
     <string name="app_class_title">앱 분류</string>

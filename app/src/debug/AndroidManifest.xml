@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- debug 빌드 전용. P0 사용 기록 프로브 (#1). 릴리스 매니페스트에는 병합되지 않는다 -->
+<!-- debug 빌드 전용. P0 사용 기록 프로브(#1)와 CSV 내보내기(#23). 릴리스 매니페스트에는 병합되지 않는다 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- 런처·브라우저·전화 앱 가시성은 main 매니페스트의 <queries>를 함께 쓴다 (#11) -->
@@ -20,6 +20,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+            설정 탭 개발자 영역의 CSV 내보내기(#23, §14.4). 캐시의 exports/ 파일만 시스템 공유로 넘긴다.
+            릴리스 빌드에는 개발자 영역이 없으므로 앱 밖으로 파일을 내보내는 길도 두지 않는다 (§11)
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/export_paths" />
+        </provider>
     </application>
 
 </manifest>

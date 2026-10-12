@@ -15,6 +15,7 @@ import com.jaeyun.tally.data.usagestats.AppClassifier
 import com.jaeyun.tally.data.usagestats.UsageEventSource
 import com.jaeyun.tally.domain.reconstructor.LONG_SCREEN_OFF_MILLIS
 import kotlinx.coroutines.flow.first
+import java.io.File
 
 /** 임시(#21): 프로브에서 낮춘 ① 화면 꺼짐 확인 기준 */
 private const val QUICK_SCREEN_OFF_MILLIS = 60_000L
@@ -65,6 +66,9 @@ class AppContainer(private val appContext: Context) {
         AppDataRepository(
             database = database,
             settings = settingsStore,
+            // debug 매니페스트 FileProvider의 경로(res/xml/export_paths.xml)와 같아야 한다
+            exportDir = File(appContext.cacheDir, "exports"),
+            selfPackage = appContext.packageName,
         )
     }
 
