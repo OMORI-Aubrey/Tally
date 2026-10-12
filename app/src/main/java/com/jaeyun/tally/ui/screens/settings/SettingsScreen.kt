@@ -13,7 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.jaeyun.tally.R
 import com.jaeyun.tally.ui.components.notebook.NotebookPaper
-import com.jaeyun.tally.ui.components.settings.SettingsEntryRow
+import com.jaeyun.tally.ui.components.settings.SettingsRow
 import com.jaeyun.tally.ui.theme.PencilSoft
 
 /**
@@ -30,7 +30,7 @@ fun SettingsScreen(onOpenAppClassification: () -> Unit, modifier: Modifier = Mod
     ) {
         Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.labelMedium, color = PencilSoft)
         Spacer(Modifier.height(8.dp))
-        SettingsEntryRow(
+        SettingsRow(
             title = stringResource(R.string.settings_app_class),
             description = stringResource(R.string.settings_app_class_description),
             onClick = onOpenAppClassification,

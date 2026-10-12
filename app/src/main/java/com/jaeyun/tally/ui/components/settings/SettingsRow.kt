@@ -29,7 +29,7 @@ import com.jaeyun.tally.ui.theme.TallyTheme
  * 설정 탭의 한 줄 (와이어프레임 §6): 이름 아래에 한 줄 설명, 오른쪽에 연필 화살표. 누르면 그 화면으로 간다.
  */
 @Composable
-fun SettingsEntryRow(title: String, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsRow(title: String, description: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -53,10 +53,10 @@ fun SettingsEntryRow(title: String, description: String, onClick: () -> Unit, mo
 
 @Preview(widthDp = 360)
 @Composable
-private fun SettingsEntryRowPreview() {
+private fun SettingsRowPreview() {
     TallyTheme {
         Column(Modifier.notebookPaper().padding(start = NotebookPaper.ContentStart, end = 24.dp)) {
-            SettingsEntryRow(
+            SettingsRow(
                 title = stringResource(R.string.settings_app_class),
                 description = stringResource(R.string.settings_app_class_description),
                 onClick = {},
