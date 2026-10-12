@@ -123,6 +123,11 @@ class AppSettingsStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it[QUICK_SCREEN_OFF_CHECK] = enabled }
     }
 
+    /** 모든 설정을 지운다(데이터 전체 삭제, §11). 온보딩 완료도 지워져 다음에는 온보딩부터 시작한다 */
+    suspend fun clear() {
+        dataStore.edit { it.clear() }
+    }
+
     companion object {
         private const val FILE_NAME = "settings"
 

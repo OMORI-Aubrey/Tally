@@ -119,7 +119,10 @@ private fun TallyNavHost(
             RecordsScreen(onOpenSession = { navController.navigate(SessionReport(it)) })
         }
         composable<Settings> {
-            SettingsScreen(onOpenAppClassification = { navController.navigate(AppClassification) })
+            SettingsScreen(
+                onOpenAppClassification = { navController.navigate(AppClassification) },
+                onDataDeleted = { navController.restartWithOnboarding() },
+            )
         }
         composable<AppClassification> {
             AppClassificationScreen(onBack = { navController.popBackStack() })
@@ -150,6 +153,17 @@ private fun NavController.navigateToTab(tab: TopLevelTab) = navigate(tab.route) 
 /** 체감 입력을 마치면 그 자리를 리포트로 바꾼다. 리포트에서 뒤로가면 체감 입력이 아니라 타이머로 돌아온다 */
 private fun NavController.showReportAfterPerceivedInput(sessionId: Long) = navigate(SessionReport(sessionId)) {
     popUpTo<PerceivedInput> { inclusive = true }
+}
+
+/**
+ * 데이터 전체 삭제 뒤 온보딩 전 상태로 돌아간다(§11). 백스택을 모두 비우고 온보딩만 남긴다.
+ * 탭마다 보존해 둔 백스택도 지운다 — 남겨 두면 기록 탭으로 갈 때 지워진 세션의 리포트가 되살아난다.
+ */
+private fun NavController.restartWithOnboarding() {
+    navigate(Onboarding) {
+        popUpTo(graph.id) { inclusive = true }
+    }
+    TopLevelTab.entries.forEach { clearBackStack(it.route) }
 }
 
 /** 온보딩을 마치면 백스택에서 지운다. 타이머에서 뒤로가면 앱을 나간다 */
