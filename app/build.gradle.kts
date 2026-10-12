@@ -44,6 +44,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // 설정 탭의 개발자 영역(#23)을 BuildConfig.DEBUG로 가린다
+        buildConfig = true
     }
     sourceSets {
         // Room 마이그레이션 테스트가 내보낸 스키마를 읽을 수 있도록 한다.

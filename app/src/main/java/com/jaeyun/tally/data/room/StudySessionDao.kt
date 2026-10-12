@@ -39,6 +39,17 @@ interface StudySessionDao {
     @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC")
     fun observeFinished(): Flow<List<StudySession>>
 
+    /** 끝난 세션 전체. 시작한 순서 (CSV 내보내기, #23) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt")
+    suspend fun getFinished(): List<StudySession>
+
+    /** 세션이 하나라도 있는지. 진행 중인 세션도 센다 (데모 데이터는 기록이 없을 때만 넣는다, #23) */
+    @Query("SELECT EXISTS(SELECT 1 FROM StudySession)")
+    fun observeHasAny(): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM StudySession)")
+    suspend fun hasAny(): Boolean
+
     /** `[startAt, endAt)`에 시작해 끝난 세션. 시작한 순서 (체감 질문 트리거의 이번 주 세션) */
     @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL AND startAt >= :startAt AND startAt < :endAt ORDER BY startAt")
     suspend fun getFinishedStartedBetween(startAt: Long, endAt: Long): List<StudySession>

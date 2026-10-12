@@ -119,4 +119,21 @@ class AppSettingsStoreTest {
         assertEquals(mapOf("수학" to 30L), settings.addedSubjects)
         assertEquals(emptySet<String>(), settings.hiddenSubjects)
     }
+
+    @Test
+    fun `전체 삭제하면 온보딩 전의 기본값으로 돌아간다`() = runTest {
+        val store = store()
+        store.setOnboardingDone(true)
+        store.setSelfReportedDailyMin(180)
+        store.addSubject("수학", addedAt = 10)
+        store.setSubjectHidden("국어", hidden = true)
+        store.setRelaxedBaseline(true)
+        store.setPerceivedAskedAt(1_000)
+        store.setRecoveryAnsweredAt(2_000)
+        store.setQuickScreenOffCheck(true)
+
+        store.clear()
+
+        assertEquals(AppSettings(), store.settings.first())
+    }
 }
