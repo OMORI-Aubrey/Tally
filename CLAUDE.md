@@ -75,7 +75,7 @@ com.jaeyun.tally
 
 ## 아키텍처 규칙 (§10.3)
 
-- 의존 방향: `ui → domain`, `ui → data/repository`, `data → domain/model`. `domain`은 `android.*`를 import하지 않는다.
+- 의존 방향: `ui → domain`, `ui → data`, `data → domain`. `ui`는 주로 `data/repository`를 쓰고, 엔티티 타입·`countsInStats`는 `data/room`, 설정 저장소 `AppSettingsStore`는 `data/datastore`에서 직접 가져온다. `ui`·`data`는 `util`을 쓴다. `domain`·`util`은 다른 계층을 import하지 않고, `domain`은 `android.*`를 import하지 않는다.
 - UseCase 계층을 두지 않는다. 알고리즘 6종만 `domain`의 순수 함수로 두고, 나머지는 ViewModel이 Repository를 직접 호출한다.
 - 도메인 순수 함수는 입력·출력을 명시적으로 받는다. 현재 시각이 필요하면 인자로 받는다 (테스트 고정용, §14.2).
 - `TimelineReconstructor`는 원본 이벤트를 받는 순수 함수다. `UsageStatsManager` 호출은 `data/usagestats`가 맡는다.

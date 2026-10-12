@@ -36,7 +36,7 @@ import com.jaeyun.tally.ui.theme.TallyTheme
  * 통계에 들어가는 세션은 시각까지 진한 연필색으로 쓴다. 통계에서 빠지는 세션(3분 미만·180분 초과)은 글자와
  * 가운뎃줄을 모두 가장 흐린 연필색([PencilFaint])으로 쓰고, 시각·과목·값에 줄을 각각 따로 긋는다.
  *
- * @param summary 오른쪽에 둘 값. P1에서는 착석 시간, P2부터는 순공·밀도
+ * @param summary 오른쪽에 둘 값. 기록 탭은 공부 시간(착석 `T_total`)을 넣는다
  */
 @Composable
 fun SessionListItem(
