@@ -51,7 +51,7 @@
      - **잠금해제 소요 10회 실측 → 흡수 임계값 확정**(§6.2.1)
    - No-Go면 minSdk와 알고리즘을 재검토한다
    - **결과:** 이벤트 3종 정상 수신, 조회 지연 없음, 런처 이벤트 확인. 화면 켜짐 직전에 직전 앱이 RESUMED되는 순서가 발견되어 KEYGUARD_HIDDEN 규칙을 확정했다. 잠금해제 14회 실측으로 흡수 임계값을 확정했다(§4)
-   - 프로브는 기본 비활성. 다시 쓸 때는 `-Ptally.probe=true`로 켠다(CLAUDE.md)
+   - 프로브는 개발 기간 동안 기본 활성(debug 빌드), 테스트 기간에는 비활성으로 둔다. 끌 때는 `-Ptally.probe=false`로 빌드한다(CLAUDE.md)
 2. **#2 [feat] Room 스키마 + DataStore**
    - `data/room/`: 엔티티 4종(§9), DAO, `TallyDatabase` v1, 스키마 export
    - `data/datastore/`: `onboardingDone`, `selfReportedDailyMin`, `hiddenSubjects`, `relaxedBaseline`
