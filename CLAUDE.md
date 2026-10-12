@@ -2,6 +2,8 @@
 
 공부 세션 중 스마트폰 사용 기록을 복원해 순공 구조를 보여주는 Android 앱. 기획의 단일 출처는 `docs/Tally-MVP-Proposal.md`이며, 화면 배치는 `docs/Tally-wireframe.md`를 따른다. 본문에서 `§n`은 기획서 절 번호다.
 
+지금 구현이 어떻게 동작하는지는 코드 기준 문서 `docs/tally/`(목차 `01-overview.md`)에 있고, 원안과 달라진 점은 `docs/tally/09-changes.md`에 모았다.
+
 진행 계획(단계별 작업, 착수 전 확정할 결정)은 `PLAN.md`를 따른다.
 
 ## 진행 상황 갱신
@@ -91,7 +93,7 @@ com.jaeyun.tally
 
 ## docs/
 
-`docs/`는 읽기 전용이다. 사용자가 수정을 요청할 때만 수정한다.
+`docs/`는 읽기 전용이다. 사용자가 수정을 요청할 때만 수정한다. 단 `docs/tally/`(구현 기준 문서)는 읽기·쓰기 자유다.
 
 ## Git 규칙
 

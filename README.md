@@ -224,6 +224,7 @@ com.jaeyun.tally
 |---|---|
 | [MVP 기획서](docs/Tally-MVP-Proposal.md) | 문제 정의, 지표, 알고리즘, 화면·데이터 설계, 범위 — 기획의 단일 출처 |
 | [화면 구성 설계](docs/Tally-wireframe.md) | 화면별 배치와 위계, 디자인 체크리스트 |
+| [구현 문서](docs/tally/01-overview.md) | 지금 코드 기준 설명 — 구조, 데이터, 타임라인 복원, 지표, 앱 분류, 화면, 디자인, 원안과 달라진 점, 개발 |
 | [개발 계획](PLAN.md) | 단계별 이슈, 진행 기록, 기획서와 다르게 정한 결정과 그 근거 |
 | [사업성 분석](docs/Tally-Feasibility-Study-Report.md) | 실제 출시를 가정한 시장·경쟁·사업성 분석 |
 | [CLAUDE.md](CLAUDE.md) | 개발 규칙 — 아키텍처, UI, Git 컨벤션 |
