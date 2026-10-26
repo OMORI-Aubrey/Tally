@@ -245,7 +245,7 @@ com.jaeyun.tally
 
 ## 라이선스
 
-이 저장소는 **[PolyForm Noncommercial License 1.0.0](LICENSE.md)**을 따릅니다.
+이 저장소는 [PolyForm Noncommercial License 1.0.0](LICENSE.md)을 따릅니다.
 
 - 공부·연구·취미 같은 **비상업적 목적**이라면 자유롭게 쓰고, 고치고, 배포할 수 있습니다. 배포할 때는 라이선스 전문(또는 URL)과 `Required Notice:` 줄을 함께 전해야 합니다
 - **상업적으로 쓰려면** 저작권자의 별도 허락이 필요합니다. 문의: sim_518@naver.com
