@@ -459,6 +459,7 @@ MVP는 앱을 **딴짓인가 아닌가**의 이진 분류로만 다룬다. 사�
 | `ACTIVITY_RESUMED` | 앱이 포그라운드로 진입 |
 | `SCREEN_INTERACTIVE` | 화면 켜짐 |
 | `SCREEN_NON_INTERACTIVE` | 화면 꺼짐 |
+| `KEYGUARD_HIDDEN` | 잠금 해제. `__SCREEN_ON_UNKNOWN__` 구간을 끝내는 데만 쓴다 (§6.2.1) |
 
 `ACTIVITY_PAUSED`는 사용하지 않는다. 다음 `RESUMED` 시각이 곧 이전 구간의 종료이므로 불필요하며, 제조사별 이벤트 유실에도 강하다.
 
@@ -471,21 +472,25 @@ MVP는 앱을 **딴짓인가 아닌가**의 이진 분류로만 다룬다. 사�
 
   1. 이벤트 수집
      events ← queryEvents(sessionStart, sessionEnd)
-     events ← 위 3개 타입만 필터, 시각 오름차순 정렬
+     events ← 위 4개 타입만 필터, 시각 오름차순 정렬
 
   2. 시작 구간 seed
      // 시작 버튼을 눌렀다는 것은 본 앱이 이미 포그라운드라는 뜻이다.
      // 이미 resumed 상태이므로 ACTIVITY_RESUMED가 새로 발생하지 않아,
      // seed가 없으면 첫 이벤트까지의 구간이 통째로 누락된다.
      current ← 구간(pkg = 본앱패키지, startAt = sessionStart)
+     lastResumed ← 본앱패키지                  // 마지막으로 RESUMED된 패키지. 3단계 내내 갱신
 
   3. 구간 생성 — current는 루프 내내 항상 열려 있다
      segments ← []
      for e in events:
+        if (e.type == ACTIVITY_RESUMED) lastResumed ← e.packageName
         pkg ← when (e.type) {
                 ACTIVITY_RESUMED       → e.packageName
                 SCREEN_NON_INTERACTIVE → "__SCREEN_OFF__"
                 SCREEN_INTERACTIVE     → "__SCREEN_ON_UNKNOWN__"
+                KEYGUARD_HIDDEN        → if (current.pkg == "__SCREEN_ON_UNKNOWN__") lastResumed
+                                         else continue       // 잠금 해제 구간이 아니면 무시
               }
         if (pkg == current.pkg) continue      // 상태 변화 없음. 구간을 쪼개지 않는다
         current.endAt ← e.timestamp
@@ -494,11 +499,12 @@ MVP는 앱을 **딴짓인가 아닌가**의 이진 분류로만 다룬다. 사�
      current.endAt ← sessionEnd
      segments += current
 
-  4. 짧은 구간 흡수 (5초 미만)
+  4. 짧은 구간 흡수 (5초 미만, "__SCREEN_ON_UNKNOWN__"만 10초 미만 — §6.2.1)
      // 삭제가 아니라 이웃의 경계를 늘려 흡수한다. 그래야 인접성이 깨지지 않는다
+     임계(pkg) ← if (pkg == "__SCREEN_ON_UNKNOWN__") 10초 else 5초
      왼쪽에서 오른쪽으로 순회:
-        길이 < 5초 이고 직전 구간 있음 → 직전.endAt ← 현재.endAt, 현재 제거
-        길이 < 5초 이고 첫 구간        → 다음.startAt ← 현재.startAt, 현재 제거
+        길이 < 임계(현재.pkg) 이고 직전 구간 있음 → 직전.endAt ← 현재.endAt, 현재 제거
+        길이 < 임계(현재.pkg) 이고 첫 구간        → 다음.startAt ← 현재.startAt, 현재 제거
 
   5. 분류 태깅
      "__SCREEN_OFF__"        → SCREEN_OFF
@@ -532,7 +538,26 @@ MVP는 앱을 **딴짓인가 아닌가**의 이진 분류로만 다룬다. 사�
 
 따라서 `DISTRACT`로 분류한다. 잠금해제에 걸리는 2~3초는 4단계 흡수 규칙이 자동으로 걸러낸다.
 
-**흡수 임계값 5초는 초기 설정값이다.** 지문 인식 실패나 패턴 재입력으로 5초를 넘기면 이탈 1회로 오집계된다. P0 실기기 검증에서 잠금해제 소요 시간을 10회 실측해 임계값을 확정한다. 5초로 부족하면 이 의사 패키지에 한해 임계를 10초로 분리한다. 판단 근거는 ADR로 남긴다.
+**잠금 해제(`KEYGUARD_HIDDEN`)가 이 구간을 끝낸다.** 잠금이 풀리면 사용자는 잠금화면이 아니라 마지막으로 RESUMED된 앱을 보고 있으므로, 구간을 그 패키지로 전환한다(3단계). 잠금을 풀지 않고 알림만 본 뒤 끄면 해제 이벤트가 없으므로 구간은 그대로 `DISTRACT`로 남는다.
+
+이 규칙이 필요한 이유는 P0 실기기 검증(삼성 One UI)에서 드러났다. 대개는 해제 시점에 그 앱의 `ACTIVITY_RESUMED`가 오지만, **화면을 끄기 직전 포그라운드였던 앱(런처 포함)의 `ACTIVITY_RESUMED`가 `SCREEN_INTERACTIVE`보다 13~28ms 먼저 오는 경우가 있고**, 그때는 해제 뒤에 새 이벤트가 없다. 해제 이벤트 없이 복원하면 해제 후 그 앱에 머문 시간 전체가 이 구간에 들어간다. 이 앱은 3단계에서 `lastResumed`로 기억되므로 해제 시점에 올바르게 전환된다.
+
+| 실측 (P0) | 해제 이벤트 미사용 | `KEYGUARD_HIDDEN` 사용 |
+|---|---|---|
+| 화면 켜짐 → 0.16초 후 해제 → 홈 19초 → 설정 앱 | `__SCREEN_ON_UNKNOWN__` 19.3초, **이탈 1회** | 0.16초(흡수), 이후 런처 `ALLOWED` |
+| NAVER RESUMED → 화면 켜짐 → 0.12초 후 해제 → NAVER 9.8초 | `__SCREEN_ON_UNKNOWN__` 9.8초 | 0.12초(흡수), 이후 NAVER |
+
+**한계** — 잠금 화면을 쓰지 않는 기기는 해제 이벤트가 없어, 홈 화면으로 켠 뒤 머문 시간이 여전히 이 구간에 들어간다(§15.3).
+
+**흡수 임계값 — 이 의사 패키지만 10초, 나머지 구간은 5초로 확정한다.** P0에서 잠금해제 소요 시간(화면 켜짐부터 `KEYGUARD_HIDDEN` 또는 앱 RESUMED까지)을 14회 실측했다.
+
+| 소요 시간 | 건수 | 해석 |
+|---|---|---|
+| 1.4초 이하 | 9 | 얼굴·지문 인식으로 즉시 해제 |
+| 2.7 ~ 4.7초 | 4 | 비밀번호 오입력 등이 섞인 해제로 추정 |
+| 16.7초 | 1 | 잠금화면 체류 또는 반복 실패. 어느 쪽이든 이탈로 집계 |
+
+5초로 두면 느린 해제와의 여유가 0.3초뿐이다. 해제는 폰을 들 때마다 일어나므로 오탐이 반복되고, 오탐 1건이 `LFS`를 반토막 낼 수 있다(§14.1). 대가로 5~10초짜리 알림 확인은 흡수되어 보이지 않지만, §2.2가 지목한 "알림을 확인하는 20초"는 여전히 잡힌다. 판단 근거는 ADR로 남긴다.
 
 **UI 표기** — §8.2의 이탈 목록에서 앱 이름 자리에 "화면 켜짐 (앱 없음)"으로 표시한다. §5.5의 인과 서술 금지 규칙에 따라 "알림을 확인했습니다" 같은 추정 문구는 쓰지 않는다.
 
@@ -1089,9 +1114,13 @@ Row(modifier = Modifier.fillMaxWidth().height(40.dp).clip(RoundedCornerShape(8.d
 
 ## 9. 데이터 모델
 
-Room 엔티티 4종. 모든 시각은 epoch millis(UTC)로 저장하고 표시 시점에 로컬 시간대로 변환한다.
+Room 엔티티 4종. 모든 시각은 epoch millis(UTC)로 저장하고 표시 시점에 로컬 시간대로 변환한다. 분류·출처·목표 지표는 Kotlin enum으로 두고 Room에는 이름(TEXT)으로 저장한다.
 
 ```kotlin
+enum class Category { DISTRACT, ALLOWED, SCREEN_OFF, AWAY }      // §5.1, AWAY = 자리 비움(§6.3 #6)
+enum class ClassificationSource { AUTO_CATEGORY, USER }
+enum class GoalMetric { LFS, INTERRUPTION, FOCUS_TOTAL }
+
 @Entity
 data class StudySession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -1108,17 +1137,22 @@ data class StudySession(
     val lfsSec: Int,
     val densityPct: Float,
     val interruptionCount: Int,
+    val metricsVersion: Int,       // 위 지표를 계산한 규칙 버전. 진행 중은 0
 
     val isValidForStats: Boolean,  // 3분 미만·180분 초과 세션은 false
+    val hasTimeline: Boolean,      // false = 권한 없이 타이머만 동작. 착석 외 지표 없음
     val createdAt: Long
 )
 
-@Entity(indices = [Index("sessionId")])
+@Entity(
+    indices = [Index("sessionId")],
+    foreignKeys = [ForeignKey(StudySession::class, ["id"], ["sessionId"], onDelete = CASCADE)]
+)
 data class AppSegment(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val sessionId: Long,
-    val packageName: String,       // "__SCREEN_OFF__" 의사 패키지 포함
-    val category: String,          // DISTRACT / ALLOWED / SCREEN_OFF
+    val packageName: String,       // "__SCREEN_OFF__", "__SCREEN_ON_UNKNOWN__" 의사 패키지 포함
+    val category: Category,        // DISTRACT / ALLOWED / SCREEN_OFF / AWAY
     val startAt: Long,
     val endAt: Long
 )
@@ -1127,14 +1161,14 @@ data class AppSegment(
 data class AppClassification(
     @PrimaryKey val packageName: String,
     val appLabel: String,
-    val category: String,
-    val source: String             // AUTO_CATEGORY / USER
+    val category: Category,        // DISTRACT / ALLOWED만 쓴다
+    val source: ClassificationSource
 )
 
 @Entity
 data class WeeklyGoal(
-    @PrimaryKey val weekStartAt: Long,
-    val metric: String,            // LFS / INTERRUPTION / FOCUS_TOTAL
+    @PrimaryKey val weekStartAt: Long,  // 월요일 00:00(로컬 시간대)
+    val metric: GoalMetric,
     val targetValue: Float,        // 분 또는 회. 세션당 이탈은 소수(3.4회)이므로 Int 불가
     val baselineValue: Float,      // 제시 당시의 기준값 (근거 보존)
     val achievedValue: Float?,     // 주 종료 후 채움
@@ -1158,7 +1192,12 @@ hiddenSubjects: Set<String>      // 칩 목록에서 제외. 세션 데이터는
 
 칩 조회는 `SELECT DISTINCT subject ... ORDER BY startAt DESC LIMIT 5`에 `hiddenSubjects` 제외 조건을 붙인다. 시트의 전체 목록은 숨김 항목까지 표시해 되돌릴 수 있게 한다.
 * **`AppSegment`에 인덱스를 둔다.** 세션당 수십 건 생성되며 세션별 조회가 주 패턴이다.
+* **`AppSegment`는 세션을 지우면 함께 지워진다(외래키 `CASCADE`).** 미완료 세션 `[삭제]`(§6.3 5번)와 데이터 전체 삭제(§11)에서 구간이 고아로 남지 않는다.
+* **분류를 enum으로 둔다.** 문자열 오타로 알 수 없는 분류가 저장되는 것을 막는다. Room에 이름으로 저장되므로 상수 이름은 바꾸지 않는다.
+* **`AWAY` 분류를 둔다.** §6.3 6번 `[자리 비웠어요]` 구간을 지우지 않고 남겨야 §6.2 커버리지 불변식이 유지된다. `T_total`·`T_focus`에서 제외한다.
+* **`hasTimeline`을 둔다.** 권한 미허용 세션(§6.3 1번)은 착석 외 지표를 계산할 수 없으므로, 이 플래그로 기준선·판정(§5.3·§7)에서 제외한다.
 * **지표를 `StudySession`에 비정규화 저장한다.** 주간·누적·기준선 집계 시 매번 세그먼트를 재순회하지 않기 위한 선택이다. **지표 정의가 변경되면 재계산 마이그레이션이 필요하므로 §5를 사전에 확정해야 한다.**
+* **`metricsVersion`을 둔다.** 비정규화 저장의 대가로, 지표 정의(§5.2)·복원 규칙(§6.2)·분류 의미가 바뀌면 이전 세션의 값이 새 규칙과 어긋난다. 규칙이 바뀔 때 버전을 올리고, 저장 버전이 낮은 세션을 재계산 대상으로 가려낸다. §17.4 로컬 백업의 "버전 필드를 미리 둔다"도 이 필드로 충족한다.
 * **개인 기준선과 판정 결과는 저장하지 않는다.** 조회 시 계산한다. 기준선은 이동값이므로 시점마다 달라지는 것이 정상이다.
 
 ---
@@ -1169,7 +1208,7 @@ hiddenSubjects: Set<String>      // 칩 목록에서 제외. 세션 데이터는
 
 | 계층 | 기술 | 선택 근거 |
 |---|---|---|
-| **최소 SDK** | **API 29 (Android 10)** | `SCREEN_INTERACTIVE` / `SCREEN_NON_INTERACTIVE`가 API 28에, `ACTIVITY_RESUMED` 상수명이 API 29에 도입된다. §6.2 알고리즘이 셋 모두에 의존하므로 29로 잡는다. **P0 실기기 검증에서 확정한다** |
+| **최소 SDK** | **API 29 (Android 10)** | `SCREEN_INTERACTIVE` / `SCREEN_NON_INTERACTIVE` / `KEYGUARD_HIDDEN`이 API 28에, `ACTIVITY_RESUMED` 상수명이 API 29에 도입된다. §6.2 알고리즘이 넷 모두에 의존하므로 29로 잡는다. **P0 실기기 검증에서 확정한다** |
 | 타깃 SDK | 최신 안정 버전 | |
 | UI | Kotlin + Jetpack Compose | |
 | 아키텍처 | MVVM + Repository | ViewModel + StateFlow |
@@ -1461,7 +1500,7 @@ P2 완료 → 자기 사용 개시 → (5주) → 실제 판정 관찰 가능
 |---|---|---|
 | 1 | 짧은 이탈 다수 (메신저 10~30초 × 6회 이상) | 5초 흡수 규칙, 이탈 횟수 과대·과소 집계 |
 | 2 | 긴 이탈 1회 (영상 5분) + 앱 전환 시 홈 경유 | 런처 `ALLOWED` 정책, 구간 병합 |
-| 3 | 화면 꺼짐 + 화면만 켜서 알림 확인 후 다시 끔 | `__SCREEN_ON_UNKNOWN__` 구간 생성(§6.2.1), 잠금해제 흡수 |
+| 3 | 화면 꺼짐 + 화면만 켜서 알림 확인 후 다시 끔 + 홈 화면으로 잠금 해제 후 머물기 | `__SCREEN_ON_UNKNOWN__` 구간 생성(§6.2.1), 잠금해제 흡수, `KEYGUARD_HIDDEN` 전환 |
 
 **3번이 이번 알고리즘 설계의 핵심 검증이다.** 이 경로는 다른 어떤 시나리오로도 관측되지 않는다.
 
@@ -1511,6 +1550,9 @@ P2 완료 → 자기 사용 개시 → (5주) → 실제 판정 관찰 가능
 | **이벤트가 하나도 없는 세션** | seed 구간이 `[sessionStart, sessionEnd]` 전체를 덮음. 밀도 100% |
 | **화면 켬 → 앱 없이 30초 → 화면 끔** | `__SCREEN_ON_UNKNOWN__` 30초가 `DISTRACT`로 집계, 이탈 1회 |
 | **화면 켬 → 2초 → 앱 실행** | 흡수되어 이탈 0회 |
+| **화면 켬 → 7초 → 앱 실행** | 화면 켜짐 구간 임계 10초로 흡수, 이탈 0회 (일반 구간 5초와의 차이 고정) |
+| **런처 RESUMED → 화면 켬 → 0.2초 후 잠금 해제 → 홈 19초 → 앱** | 홈 체류가 런처 `ALLOWED`, 이탈 0회 (§6.2.1 P0 실측 재현) |
+| **화면 켬 → 앱 RESUMED → 이어서 잠금 해제** | 해제 이벤트가 무시되어 구간이 쪼개지지 않음 |
 | **시작 후 10분 무이벤트 → 학습앱 20분** | `LFS` = **30분** (seed 없는 구현은 20분으로 계산한다) |
 | **`SCREEN_OFF` 단일 구간 70분** | §6.3 6번 확인 다이얼로그 트리거 |
 
@@ -1633,7 +1675,7 @@ fun assertInvariant(segments: List<AppSegment>, start: Long, end: Long) {
 | 한계 | 성격 | 대응 |
 |---|---|---|
 | 4주 미만 사용자는 판정·목표를 볼 수 없다 | 구조적 | 계측 결과는 첫 세션부터 정상 표시. 판정 섹션만 "세션 N개 더 필요" 안내로 대체 |
-| 판정 임계값(±3%, ±10%)과 규칙 계수(총량 가드 0.7, 목표 트리거 1.2·0.9, 4순위 폭 5%, 수면 판정 60분, 흡수 5초)에 이론적 근거가 없다 | 방법론적 | 전부 초기 설정값임을 명시하고 §14.3 인터뷰와 §14.1 실측으로 조정 |
+| 판정 임계값(±3%, ±10%)과 규칙 계수(총량 가드 0.7, 목표 트리거 1.2·0.9, 4순위 폭 5%, 수면 판정 60분, 흡수 5초)에 이론적 근거가 없다. 화면 켜짐 구간의 흡수 10초만 P0 실측 근거가 있다 | 방법론적 | 전부 초기 설정값임을 명시하고 §14.3 인터뷰와 §14.1 실측으로 조정 |
 | 짧은 테스트 기간에는 테스터가 판정·목표를 볼 수 없다 | 평가 설계 | §5.3 디버그 완화 플래그로 대응. 판정 타당성은 개발자 본인 데이터로 보완 (§14.3) |
 | 총량 가드가 "짧고 굵게" 전략을 penalize할 수 있다 | 제품 리스크 | 단방향 클램프이므로 감점은 없고 상향만 막는다. 전용 문구로 성취를 먼저 서술 (§7.2.1) |
 | 기준선이 함께 상승해 판정이 "유지"로 수렴한다 | 구조적 | 무한 칭찬 방지 장치로 의도된 성질. 절대 성취는 전체 기간 최고 기록 갱신과 누적 총량으로 별도 인정 |
@@ -1651,8 +1693,10 @@ fun assertInvariant(segments: List<AppSegment>, start: Long, end: Long) {
 | 통화 시간을 딴짓과 동일 처리 | MVP 단순화 | §17.3으로 이월 |
 | 일별 막대 차트의 정보량 부족 | 구조적 | 요일당 표본 1개로는 요일 패턴을 알 수 없다. 주간 총량 확인용으로만 사용 |
 | 집중 밀도 절대값의 해석 불가 | 구조적 | 78%가 좋은지 나쁜지 기준이 없다. 반드시 전주 대비 또는 기준선과 함께 표시 |
-| 잠금해제 지연이 짧은 이탈로 오집계될 수 있다 | 기술 한계 | 흡수 임계값 5초는 P0 실측으로 확정하는 초기 설정값 (§6.2.1) |
+| 잠금해제 지연이 짧은 이탈로 오집계될 수 있다 | 기술 한계 | 화면 켜짐 구간만 흡수 임계값을 10초로 두어 완화(P0 실측, §6.2.1). 10초를 넘는 반복 실패는 이탈로 집계된다 |
+| 10초 미만의 알림 확인은 감지되지 않는다 | 설계상 수용 | 잠금해제 오탐을 막기 위한 흡수 임계값의 대가(§6.2.1) |
 | 화면 켜짐 구간의 실제 행동을 알 수 없다 | 원리적 | 알림 확인인지 잠금해제 실패인지 구분 불가. `DISTRACT`로 보수적 처리하고 UI에 "화면 켜짐 (앱 없음)"으로만 표기 |
+| 잠금 화면을 쓰지 않는 기기에서 홈 체류가 딴짓으로 잡힌다 | 기술 한계 | 런처가 화면 켜짐보다 먼저 RESUMED되고 `KEYGUARD_HIDDEN`이 오지 않아 구간이 끝나지 않는다(§6.2.1). 타깃 사용자 대부분이 잠금 화면을 쓰므로 수용 |
 | 타이머를 켠 채 잠들면 순공시간이 누적된다 | 구조적 | §6.3 6번 확인 다이얼로그로 완화. 사용자가 `[공부했어요]`를 오선택하면 방지 불가 |
 | 2대 기기로 우회 가능 | 설계상 수용 | 자기 계측 도구이며 감시 도구가 아니다. 우회 동기가 낮다 |
 | 제조사별 이벤트 기록 차이 | 기술 한계 | `ACTIVITY_PAUSED` 미사용으로 내성 확보. 다기기 검증은 §17.5로 이월 |
@@ -1686,7 +1730,7 @@ fun assertInvariant(segments: List<AppSegment>, start: Long, end: Long) {
 |---|---|---|---|
 | 첫 이탈까지 시간 (TTFD) | 세션 시작부터 첫 이탈까지 경과 시간 | 계산은 단순하나 UI 노출과 해석 문구가 추가로 필요 | 목표 대상 지표를 늘릴 때 |
 | 복귀 안정성 | (첫 이탈 이후 집중 구간 평균) / (전체 집중 구간 평균) | 해석을 설명하는 UI 비용이 크다 | 인터뷰에서 수요가 확인될 때 |
-| 마이크로 이탈 분리 | 5초 미만 이탈을 별도 집계 | MVP는 5초 미만 구간을 직전 구간에 흡수 | 알림 확인 빈도를 분석 대상으로 삼을 때 |
+| 마이크로 이탈 분리 | 5초 미만 이탈을 별도 집계 | MVP는 5초 미만(화면 켜짐 구간은 10초 미만) 구간을 직전 구간에 흡수 | 알림 확인 빈도를 분석 대상으로 삼을 때 |
 | 과목 엔티티 및 과목별 판정 | `Subject` 테이블, 과목별 기준선과 목표 | 작업량 문제가 아니라 **방향의 문제**다. §12.2 "과목은 분석의 차원이 아니라 세션의 라벨이다" 원칙에 따라 제외한다. 과목별 집계 화면도 같은 이유로 넣지 않는다 | 원칙 자체를 재검토할 때. 단 §17.2 회귀 분석이 과목의 설명력을 먼저 확인해야 한다 |
 | 요일별 기준선 | 평일과 주말의 기준선을 분리 | 표본이 절반으로 나뉘어 활성 조건 충족이 늦어진다 | 8주 이상 사용 데이터 확보 시 |
 | 판정 임계값 개인화 | 사용자별 주간 변동 표준편차로 임계값을 자동 조정 | §7.2의 고정 임계값이 실제로 부적합한지 먼저 확인해야 한다 | §14.3 인터뷰에서 부적합이 확인될 때 |
@@ -1792,7 +1836,7 @@ LLM 응답 → 정규식으로 숫자 추출 → 입력 JSON 값 집합과 대�
 | CSV 내보내기 (정식 기능) | 설정 화면에서 사용자가 자기 데이터를 내보냄 | 데이터 소유권 관점에서 가치가 있으나 MVP 성공 조건과 무관. **개발용 내보내기는 MVP에 포함**(§14.4) |
 | 캘린더 뷰 | 월간 격자에 일별 순공시간 표시 | 목록 화면으로 동일 접근 가능 |
 | 목표 직접 선택 | 앱이 제안한 목표 대신 사용자가 대상 지표를 고름 | §7.3의 자동 선택 규칙이 부적합한지 먼저 확인해야 한다 |
-| **로컬 백업·복원** (확장 항목 중 최우선) | 암호화된 파일로 내보내기·가져오기. 서버를 두지 않으므로 §11 원칙 유지 | 학기 기간 내 발생하지 않으므로 MVP에서 제외한다. 다만 **기기를 교체하면 4주 기준선이 전부 소실되는 구조**이므로, 이는 편의 기능이 아니라 리텐션 문제다. MVP 이후 가장 먼저 착수한다. 나중에 붙이면 스키마 마이그레이션 비용이 발생하므로 §9 엔티티 설계 시 버전 필드를 미리 둔다 |
+| **로컬 백업·복원** (확장 항목 중 최우선) | 암호화된 파일로 내보내기·가져오기. 서버를 두지 않으므로 §11 원칙 유지 | 학기 기간 내 발생하지 않으므로 MVP에서 제외한다. 다만 **기기를 교체하면 4주 기준선이 전부 소실되는 구조**이므로, 이는 편의 기능이 아니라 리텐션 문제다. MVP 이후 가장 먼저 착수한다. 나중에 붙이면 스키마 마이그레이션 비용이 발생하므로 §9 엔티티 설계 시 버전 필드를 미리 둔다(`StudySession.metricsVersion`) |
 | 클라우드 동기화 | 다기기 데이터 통합 | §11 로컬 전용 원칙과 충돌 |
 
 ### 17.5 검증 확장

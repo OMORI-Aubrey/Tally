@@ -18,12 +18,17 @@ android {
         minSdk = 29
         targetSdk = 37
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
+        debug {
+            // 사용 기록 프로브(#1, app/src/debug)는 debug 빌드에서 기본으로 켠다. Android Studio 실행 버튼으로 설치해도
+            // 런처에 "Tally 프로브"가 함께 생긴다. 끄려면 -Ptally.probe=false 또는 ~/.gradle/gradle.properties에 tally.probe=false
+            manifestPlaceholders["probeEnabled"] = providers.gradleProperty("tally.probe").getOrElse("true")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -39,6 +44,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // 설정 탭의 개발자 영역(#23)을 BuildConfig.DEBUG로 가린다
+        buildConfig = true
     }
     sourceSets {
         // Room 마이그레이션 테스트가 내보낸 스키마를 읽을 수 있도록 한다.
@@ -86,4 +93,5 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

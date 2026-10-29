@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    테마 아이콘(Android 13+)용 단색 레이어. 시스템이 알파만 보고 색을 입힌다.
+    선은 불투명, 형광펜 칠은 반투명으로 남겨 단색에서도 칠한 부분이 보이게 한다.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:pivotX="36"
+        android:pivotY="37"
+        android:scaleX="1.0"
+        android:scaleY="1.0"
+        android:translateX="18"
+        android:translateY="17">
+        <path
+            android:fillAlpha="0.4"
+            android:fillColor="#000000"
+            android:pathData="M36,40 L36,19 A21,21 0 0,1 55.5,33 Z" />
+        <path
+            android:pathData="M36,18 C49,17.5 58,28 57,40 C56,52 46,61 35,61 C23,60.5 14,51 15,39 C16,27 25,18.5 38,19"
+            android:strokeColor="#000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M31,12 L41,12 M36,12 L36,18"
+            android:strokeColor="#000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M36,40 L36,26"
+            android:strokeColor="#000000"
+            android:strokeWidth="3"
+            android:strokeLineCap="round" />
+        <path
+            android:fillColor="#000000"
+            android:pathData="M33.4,40 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+    </group>
+</vector>

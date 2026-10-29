@@ -1,0 +1,105 @@
+<resources>
+    <string name="probe_app_name">Tally 프로브</string>
+    <string name="probe_title">사용 기록 프로브</string>
+
+    <string name="probe_permission_granted">사용 기록 접근: 허용됨</string>
+    <string name="probe_permission_denied">사용 기록 접근: 허용 안 됨</string>
+    <string name="probe_permission_hint">설정 목록에서 Tally를 찾아 허용한 뒤 돌아오세요.</string>
+    <string name="probe_open_settings">설정 열기</string>
+
+    <string name="probe_window_minutes">최근 %1$d분</string>
+    <string name="probe_target_only">대상 이벤트 4종만</string>
+    <string name="probe_query">다시 조회</string>
+    <string name="probe_copy">텍스트 복사</string>
+
+    <string name="probe_section_summary">요약</string>
+    <string name="probe_range">%1$s ~ %2$s · 이벤트 %3$d개</string>
+    <string name="probe_latest">최신 이벤트: %1$s %2$s (%3$s 전)</string>
+    <string name="probe_latest_none">조회 범위에 이벤트가 없어요</string>
+    <string name="probe_self_resumed_ok">마지막 RESUMED가 본 앱 — 복귀 이벤트 수신됨</string>
+    <string name="probe_self_resumed_missing">마지막 RESUMED가 본 앱이 아님 — 조회 지연 가능성</string>
+    <string name="probe_type_count">%1$s %2$d</string>
+
+    <string name="probe_section_screen_on">화면 켜짐 → 다음 이벤트 (잠금해제 측정)</string>
+    <string name="probe_rule_current">§6.2 원안 (다음 앱 RESUMED까지)</string>
+    <string name="probe_rule_keyguard">확정 규칙 (잠금 해제 또는 앱 RESUMED까지)</string>
+    <string name="probe_screen_on_stats">%1$s: %2$d건 · 중앙값 %3$s · 최대 %4$s</string>
+    <string name="probe_screen_on_over">└ 5초 이상 %1$d건 · 10초 이상 %2$d건</string>
+    <string name="probe_screen_on_glance">앱 없이 화면만 켰다 끔 %1$d건</string>
+    <string name="probe_screen_on_empty">조회 범위에 화면 켜짐 이벤트가 없어요</string>
+    <string name="probe_sample_app">→ 앱 %1$s · %2$s</string>
+    <string name="probe_sample_off">→ 화면 꺼짐 %1$s</string>
+    <string name="probe_sample_none">→ 이후 이벤트 없음 %1$s</string>
+    <string name="probe_sample_keyguard">잠금 해제 %1$s</string>
+
+    <string name="probe_section_last_session">마지막 세션 (#12 저장 결과)</string>
+    <string name="probe_last_session_none">끝난 세션이 없어요. 타이머로 세션을 하나 끝내고 돌아오세요</string>
+    <!-- 시작 ~ 끝 · 길이 · 타임라인 · 지표 규칙 버전 · 통계 -->
+    <string name="probe_last_session_header">%1$s ~ %2$s · %3$s · %4$s · 지표 규칙 v%5$d · %6$s</string>
+    <string name="probe_timeline_yes">타임라인 있음</string>
+    <string name="probe_timeline_no">타임라인 없음(권한 없음)</string>
+    <string name="probe_stats_in">통계 포함</string>
+    <string name="probe_stats_out">통계 제외</string>
+    <string name="probe_last_session_metrics">착석 %1$s · 순공 %2$s · 딴짓 %3$s · LFS %4$s · 이탈 %5$d회 · 밀도 %6$.1f%%</string>
+    <string name="probe_coverage_ok">구간 %1$d개 · 합 %2$s = 세션 길이 ✓</string>
+    <string name="probe_coverage_bad">구간 %1$d개 · 합 %2$s ≠ 세션 길이 %3$s ✗ (불변식 위반)</string>
+    <!-- 시작 ~ 끝 길이 분류 이름 -->
+    <string name="probe_segment_row">%1$s ~ %2$s  %3$s  %4$s  %5$s</string>
+    <string name="probe_category_away">자리 비움</string>
+    <string name="probe_pkg_screen_off">화면 꺼짐</string>
+    <string name="probe_pkg_screen_on">화면 켜짐 (앱 없음)</string>
+
+    <string name="probe_last_session_perceived">체감 %1$d분</string>
+    <string name="probe_last_session_no_perceived">체감 입력 없음</string>
+
+    <!-- 임시(#14) -->
+    <string name="probe_section_running">진행 중 세션 (임시: 시간 더하기)</string>
+    <string name="probe_running_none">진행 중인 세션이 없어요. 타이머를 시작하고 오세요</string>
+    <!-- 시작 시각 · 경과 -->
+    <string name="probe_running">%1$s 시작 · 경과 %2$s</string>
+    <string name="probe_running_hint">시작 시각을 당겨 경과 시간을 늘린다. 당긴 구간의 실제 폰 사용도 세션에 들어가 지표는 실제와 다르다</string>
+    <string name="probe_running_extend">+%1$d분</string>
+
+    <string name="probe_section_perceived">체감 질문 (#14, 이번 주)</string>
+    <string name="probe_perceived_asked">이번 주에 물었음 — %1$s 시작 세션 (다시 묻지 않음)</string>
+    <string name="probe_perceived_answered_only">이번 주에 답한 세션이 있음 (다시 묻지 않음)</string>
+    <string name="probe_perceived_not_asked">이번 주에는 아직 안 물음 — 다음 후보 세션은 3분의 1 확률, 3번째부터 확정</string>
+    <string name="probe_perceived_counts">후보 세션 %1$d개 · 답한 세션 %2$d개 · 다음 후보 세션은 %3$d번째</string>
+    <string name="probe_perceived_clear">이번 주 체감 기록 지우기</string>
+
+    <!-- 임시(#21) -->
+    <string name="probe_section_screen_off_check">화면 꺼짐 확인 다이얼로그 (임시: 기준 낮추기)</string>
+    <string name="probe_screen_off_check_quick">화면이 1분 넘게 꺼진 구간을 묻는다</string>
+    <string name="probe_screen_off_check_normal">화면이 60분 넘게 꺼진 구간을 묻는다 (기본)</string>
+    <string name="probe_screen_off_check_hint">다음에 끝내는 세션부터 적용된다. 시험을 마치면 다시 끈다</string>
+    <string name="probe_screen_off_check_toggle">기준을 1분으로 낮추기</string>
+
+    <string name="probe_section_onboarding">온보딩 (#19)</string>
+    <string name="probe_onboarding_done">온보딩 마침</string>
+    <string name="probe_onboarding_not_done">온보딩 안 마침 — 본 앱을 새로 열면 온보딩부터 나옴</string>
+    <string name="probe_onboarding_self_report">저장된 자기보고 하루 %1$d분</string>
+    <string name="probe_onboarding_self_report_none">저장된 자기보고 없음 (건너뜀)</string>
+    <string name="probe_onboarding_reset_hint">온보딩 완료만 되돌리고 본 앱을 새로 연다. 세션 기록과 앱 분류는 그대로다. 권한 안내 단계를 보려면 먼저 설정에서 Tally의 사용 기록 접근을 끈다</string>
+    <string name="probe_onboarding_reset">온보딩 다시 보기</string>
+
+    <string name="probe_section_classification">자동 분류 (조회 범위에서 RESUMED된 앱, 최근순)</string>
+    <!-- 앱 이름 — 딴짓/허용 (근거) 패키지 -->
+    <string name="probe_classification_row">%1$s — %2$s (%3$s) %4$s</string>
+    <string name="probe_category_distract">딴짓</string>
+    <string name="probe_category_allowed">허용</string>
+    <string name="probe_reason_self">본 앱</string>
+    <string name="probe_reason_launcher">기본 홈 앱</string>
+    <string name="probe_reason_study">공부 앱</string>
+    <string name="probe_reason_browser">브라우저</string>
+    <string name="probe_reason_phone">전화</string>
+    <string name="probe_reason_category">카테고리 SNS·영상·게임</string>
+    <string name="probe_reason_system">시스템 앱</string>
+    <string name="probe_reason_installed">설치한 앱 기본값</string>
+
+    <string name="probe_section_events">이벤트 %1$d개 (최신순)</string>
+    <string name="probe_section_events_dump">이벤트 %1$d개 (시각순)</string>
+    <string name="probe_tag_launcher">런처</string>
+    <string name="probe_tag_self">본 앱</string>
+    <string name="probe_seconds">%1$.1f초</string>
+    <string name="probe_clip_label">Tally 사용 기록 프로브</string>
+</resources>

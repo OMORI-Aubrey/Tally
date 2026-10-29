@@ -1,0 +1,83 @@
+package com.jaeyun.tally.data.room
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface StudySessionDao {
+
+    @Insert
+    suspend fun insert(session: StudySession): Long
+
+    @Update
+    suspend fun update(session: StudySession)
+
+    /** 구간(`AppSegment`)도 함께 지워진다 */
+    @Delete
+    suspend fun delete(session: StudySession)
+
+    @Query("SELECT * FROM StudySession WHERE id = :id")
+    suspend fun getById(id: Long): StudySession?
+
+    /** 진행 중이거나 강제 종료로 끝나지 않은 세션 (§6.3 #5). 동시에 하나만 존재해야 한다 */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NULL ORDER BY startAt DESC LIMIT 1")
+    suspend fun getUnfinished(): StudySession?
+
+    /** [getUnfinished]를 관찰한다. 타이머 화면이 IDLE/RUNNING을 이 값으로 정한다 */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NULL ORDER BY startAt DESC LIMIT 1")
+    fun observeUnfinished(): Flow<StudySession?>
+
+    /** 가장 최근에 끝난 세션 (debug 프로브의 마지막 세션 확인) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC LIMIT 1")
+    suspend fun getLatestFinished(): StudySession?
+
+    /** 끝난 세션 전체. 최근에 시작한 순서 (기록 탭 세션 목록) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt DESC")
+    fun observeFinished(): Flow<List<StudySession>>
+
+    /** 끝난 세션 전체. 시작한 순서 (CSV 내보내기, #23) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL ORDER BY startAt")
+    suspend fun getFinished(): List<StudySession>
+
+    /** 세션이 하나라도 있는지. 진행 중인 세션도 센다 (데모 데이터는 기록이 없을 때만 넣는다, #23) */
+    @Query("SELECT EXISTS(SELECT 1 FROM StudySession)")
+    fun observeHasAny(): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM StudySession)")
+    suspend fun hasAny(): Boolean
+
+    /** `[startAt, endAt)`에 시작해 끝난 세션. 시작한 순서 (체감 질문 트리거의 이번 주 세션) */
+    @Query("SELECT * FROM StudySession WHERE endAt IS NOT NULL AND startAt >= :startAt AND startAt < :endAt ORDER BY startAt")
+    suspend fun getFinishedStartedBetween(startAt: Long, endAt: Long): List<StudySession>
+
+    /**
+     * [id]를 뺀 세션 중 최장 구간의 최댓값(리포트의 기록, §8.2). 통계에 셀 세션(`countsInStats`)만 본다. 없으면 null
+     */
+    @Query("SELECT MAX(lfsSec) FROM StudySession WHERE id != :id AND endAt IS NOT NULL AND isValidForStats = 1 AND hasTimeline = 1")
+    suspend fun getBestLfsExcept(id: Long): Int?
+
+    /** 체감 집중 시간(분)을 적는다 (§3.4). null이면 지운다 */
+    @Query("UPDATE StudySession SET perceivedFocusMin = :minutes WHERE id = :id")
+    suspend fun setPerceivedFocus(id: Long, minutes: Int?)
+
+    // 과목 (§8.1.1). 과목은 세션의 라벨 문자열이라 별도 테이블 없이 세션에서 모은다
+
+    /** 세션에 쓰인 과목별 세션 수와 마지막 세션 시각. 정렬은 저장소가 추가만 한 과목과 합친 뒤에 한다 */
+    @Query(
+        "SELECT subjectName AS name, COUNT(*) AS sessionCount, MAX(startAt) AS lastStartAt FROM StudySession " +
+            "WHERE subjectName IS NOT NULL GROUP BY subjectName"
+    )
+    fun observeSubjectStats(): Flow<List<SubjectStat>>
+
+    /** 가장 최근 세션의 과목. 세션이 없거나 과목 없이 시작했으면 null */
+    @Query("SELECT subjectName FROM StudySession ORDER BY startAt DESC LIMIT 1")
+    suspend fun getLastSubject(): String?
+
+    /** 과거 세션까지 소급해 바꾼다. 바뀐 세션 수를 돌려준다 */
+    @Query("UPDATE StudySession SET subjectName = :newName WHERE subjectName = :oldName")
+    suspend fun renameSubject(oldName: String, newName: String): Int
+}
