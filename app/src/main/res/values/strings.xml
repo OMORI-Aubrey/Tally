@@ -209,6 +209,72 @@
     <!-- 화면 낭독기: "두 번 탭하여 리포트 보기" -->
     <string name="records_open_report">리포트 보기</string>
 
+    <!-- 판정 섹션 (§8.4 (1), §7.2). 늘 이번 주를 본다. 판정 문구는 파란 볼펜으로 쓴다 -->
+    <string name="baseline_needed">기준선 계산에 세션 %1$d개가 더 필요합니다</string>
+    <string name="verdict_waiting">이번 주 첫 세션을 마치면 판정이 나와요</string>
+    <string name="verdict_best">지난 4주 중 가장 잘한 주예요</string>
+    <string name="verdict_better">지난 4주보다 잘하고 있어요</string>
+    <string name="verdict_steady">평소 페이스를 유지했어요</string>
+    <!-- 최장 구간 47분을 만들었어요. 성취를 먼저 말한다 (§5.6). 조사는 받침에 맞춰 코드에서 고른다 -->
+    <string name="verdict_slipped">최장 구간 %1$s%2$s 만들었어요. 딴짓은 조금 늘었네요</string>
+    <!-- 이번 주 최장 구간은 47분이었어요 / 40초였어요 -->
+    <string name="verdict_tough">이번 주 최장 구간은 %1$s%2$s어요. 조금 힘든 주였네요</string>
+    <!-- 총량 가드가 판정을 내린 주 (§7.2.1). 두 사실을 하나의 점수로 합치지 않고 나란히 쓴다 -->
+    <string name="verdict_clamped">이번 주는 짧게 자주 하셨네요. 집중 밀도는 %1$d%%로 좋았어요</string>
+    <!-- 판정 근거 (§7.2.2). 기준선은 세션 LFS의 평균이라 이번 주도 평균으로 견준다 -->
+    <string name="verdict_basis_lfs">최장 평균 %1$s</string>
+    <string name="verdict_basis_density">집중 밀도 %1$d%%</string>
+    <!-- 순공 최대 21h -->
+    <string name="verdict_basis_focus">순공 %1$s</string>
+    <!-- 근거 값 뒤에 붙는 기준선: (평소 38분) -->
+    <string name="verdict_basis_usual">%1$s (평소 %2$s)</string>
+    <string name="verdict_basis_usual_density">%1$s (평소 %2$d%%)</string>
+    <!-- 집중 밀도 82% · 4주 기준선 71% (§7.2.1) -->
+    <string name="verdict_basis_clamped_density">집중 밀도 %1$d%% · 4주 기준선 %2$d%%</string>
+
+    <!-- 목표 (§7.3). 지난주 값으로 만들어 이번 주에 달성하는 목표다 (PLAN.md §4) -->
+    <string name="goal_title">이번 주 목표</string>
+    <string name="goal_metric_interruption">세션당 이탈</string>
+    <string name="goal_metric_lfs">최장 평균</string>
+    <string name="goal_metric_focus">주간 순공</string>
+    <string name="goal_return">지난 4주 평소값입니다</string>
+    <string name="goal_stretch_up">평소보다 5%% 높게 잡았어요</string>
+    <string name="goal_stretch_down">평소보다 5%% 적게 잡았어요</string>
+    <!-- 목표 달성 도장. 빨간 펜으로 쓴다. 미달성은 아무것도 쓰지 않는다 (§7.3) -->
+    <string name="badge_achieved">지난주 목표 달성</string>
+    <!-- 목표를 정할 때의 값을 알 수 없으면: 목표 3.4회 → 3.2회 -->
+    <string name="badge_target">목표 %1$s</string>
+    <!-- 4.4회 -->
+    <string name="count_times">%1$s회</string>
+
+    <!-- 이번 주 섹션 (§8.4 (2)) -->
+    <!-- 9월 1일 ~ 9월 7일 -->
+    <string name="week_range">%1$d월 %2$d일 ~ %3$d월 %4$d일</string>
+    <string name="week_previous">이전 주</string>
+    <string name="week_next">다음 주</string>
+    <string name="week_empty_current">이번 주 기록이 아직 없어요</string>
+    <string name="week_empty_past">이 주에는 기록이 없어요</string>
+    <!-- 1주차 격차 (§5.8). 첫 주에만 한 번 -->
+    <string name="first_week_self">시작할 때 적으신 하루</string>
+    <string name="first_week_actual">이번 주 실측 하루 평균</string>
+    <string name="week_longest">최장</string>
+    <string name="week_interruptions">세션당 이탈</string>
+    <string name="week_no_interruption">이탈이 한 번도 없었어요</string>
+    <string name="week_density">집중 밀도</string>
+    <!-- 비교값 앞의 화살표는 그림으로 그린다: ↑ 지난주 38분 -->
+    <string name="week_previous_value">지난주 %1$s</string>
+    <string name="week_compare_up">지난주보다 늘었어요</string>
+    <string name="week_compare_down">지난주보다 줄었어요</string>
+    <!-- 딴짓 6h 06m (22%) -->
+    <string name="week_distract">딴짓 %1$s</string>
+    <string name="week_distract_share">딴짓 %1$s (%2$d%%)</string>
+    <!-- 세션 18회 · 평균 1시간 11분 (평균은 공부 시간) -->
+    <string name="week_sessions">세션 %1$d회 · 평균 %2$s</string>
+    <!-- 일별 막대의 화면 낭독기 문구: 월요일 순공 최대 1시간 20분 -->
+    <string name="daily_focus_description">%1$s 순공 %2$s</string>
+    <string name="daily_focus_none">%1$s 기록 없음</string>
+    <string name="top_apps_title">공부 중 켠 앱</string>
+
     <!-- 시간 표기 (PLAN.md §4). 세션 단위는 한글, 주간·누적 총량은 h m -->
     <string name="duration_seconds">%1$d초</string>
     <!-- 초 단위에서 버려 0초가 된 길이. 0을 보이지 않는다 (§8.5.1, PLAN.md §4) -->

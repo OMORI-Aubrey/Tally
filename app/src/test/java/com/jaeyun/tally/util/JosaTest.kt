@@ -27,6 +27,13 @@ class JosaTest {
     }
 
     @Test
+    fun `이었였은 받침으로 고른다`() {
+        assertEquals("이었", Josa.pastCopulaOf("47분"))
+        assertEquals("이었", Josa.pastCopulaOf("1시간"))
+        assertEquals("였", Josa.pastCopulaOf("40초"))
+    }
+
+    @Test
     fun `한글이 아니면 둘을 함께 쓴다`() {
         assertEquals("은(는)", Josa.topicOf("Instagram"))
         assertEquals("을(를)", Josa.objectOf("Java"))
