@@ -37,6 +37,13 @@ data class SessionReportData(
     val bestOtherLfsSec: Int?,
 )
 
+/** 기록 탭 공부 중 켠 앱(§8.4)을 셀 재료 */
+data class AppUsageData(
+    val segments: List<AppSegment>,
+    /** 구간에 나온 앱의 이름(패키지 → 앱 이름). 분류에 없는 앱은 빠진다 */
+    val appLabels: Map<String, String>,
+)
+
 /** 리포트에서 앱 분류를 정한 결과 */
 enum class ReclassifyResult {
     /** 분류가 바뀌어 이 세션의 타임라인과 지표를 다시 계산했다 */
@@ -183,6 +190,15 @@ class SessionRepository(
         val classifications = classificationDao.getByPackages(segments.map { it.packageName }.distinct())
             .associateBy { it.packageName }
         return SessionReportData(session, segments, classifications, dao.getBestLfsExcept(sessionId))
+    }
+
+    /** [sessionIds] 세션의 구간과 앱 이름 (기록 탭 공부 중 켠 앱, §8.4) */
+    suspend fun loadAppUsage(sessionIds: List<Long>): AppUsageData {
+        if (sessionIds.isEmpty()) return AppUsageData(emptyList(), emptyMap())
+        val segments = segmentDao.getBySessions(sessionIds)
+        val labels = classificationDao.getByPackages(segments.map { it.packageName }.distinct())
+            .associate { it.packageName to it.appLabel }
+        return AppUsageData(segments, labels)
     }
 
     /**
