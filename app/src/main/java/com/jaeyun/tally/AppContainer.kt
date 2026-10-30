@@ -34,7 +34,7 @@ class AppContainer(private val appContext: Context) {
     val settingsStore: AppSettingsStore by lazy { AppSettingsStore.create(appContext) }
 
     /** debug 빌드인지. BuildConfig 대신 debuggable 플래그로 판단한다 */
-    private val debuggable: Boolean
+    val debuggable: Boolean
         get() = (appContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
     val sessionRepository: SessionRepository by lazy {
