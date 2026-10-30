@@ -11,6 +11,9 @@ object Josa {
     /** 은/는 */
     fun topicOf(word: String): String = pick(word, withFinal = "은", withoutFinal = "는")
 
+    /** 이었/였 ("47분"이었어요, "40초"였어요). 뒤에 "어요" 등을 붙여 쓴다 */
+    fun pastCopulaOf(word: String): String = pick(word, withFinal = "이었", withoutFinal = "였")
+
     /** 으로/로. ㄹ 받침 뒤에는 "로"를 쓴다("국어"로, "수학"으로, "물리"로, "문학"으로, "철"로) */
     fun directionOf(word: String): String {
         val final = finalConsonantIndex(word) ?: return "(으)로"

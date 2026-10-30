@@ -17,8 +17,8 @@ android {
         // SCREEN_INTERACTIVE/NON_INTERACTIVE(API 28), ACTIVITY_RESUMED(API 29)에 의존 (§10.1)
         minSdk = 29
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
