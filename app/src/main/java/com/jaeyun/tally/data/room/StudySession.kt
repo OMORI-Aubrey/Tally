@@ -2,6 +2,7 @@ package com.jaeyun.tally.data.room
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.jaeyun.tally.domain.model.SessionStats
 
 /**
  * 공부 세션 (§9). 모든 시각은 epoch millis(UTC).
@@ -45,3 +46,14 @@ data class StudySession(
  * 실측 지표가 없다 (PLAN.md §4 주간 요약 줄의 숫자, 체감 질문 후보, 리포트의 기록)
  */
 val StudySession.countsInStats: Boolean get() = isValidForStats && hasTimeline
+
+/** 기준선·목표(§5.3, §7.3)가 읽는 값만 옮긴다 */
+fun StudySession.toSessionStats(): SessionStats = SessionStats(
+    startAt = startAt,
+    isValidForStats = isValidForStats,
+    hasTimeline = hasTimeline,
+    tTotalSec = tTotalSec,
+    tFocusSec = tFocusSec,
+    lfsSec = lfsSec,
+    interruptionCount = interruptionCount,
+)

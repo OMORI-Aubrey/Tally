@@ -34,9 +34,7 @@ object BaselineCalculator {
         zone: ZoneId,
         requiredSessions: Int,
     ): Baseline {
-        val windowStartAt = Instant.ofEpochMilli(thisWeekStartAt).atZone(zone)
-            .minusWeeks(WEEKS.toLong())
-            .toInstant().toEpochMilli()
+        val windowStartAt = windowStartAt(thisWeekStartAt, zone)
         val valid = sessions.filter { it.countsInStats && it.startAt >= windowStartAt && it.startAt < thisWeekStartAt }
         if (valid.size < requiredSessions) return Baseline.Inactive(neededSessions = requiredSessions - valid.size)
 
@@ -51,4 +49,10 @@ object BaselineCalculator {
             sessionCount = valid.size,
         )
     }
+
+    /** 기준선 기간의 시작: [thisWeekStartAt]의 4주 전 월요일 00:00. 날짜로 계산해 일광 절약 시간이 바뀌어도 00:00이다 */
+    fun windowStartAt(thisWeekStartAt: Long, zone: ZoneId): Long =
+        Instant.ofEpochMilli(thisWeekStartAt).atZone(zone)
+            .minusWeeks(WEEKS.toLong())
+            .toInstant().toEpochMilli()
 }

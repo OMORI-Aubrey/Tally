@@ -10,6 +10,7 @@ import com.jaeyun.tally.data.repository.AppDataRepository
 import com.jaeyun.tally.data.repository.PerceivedFocusRepository
 import com.jaeyun.tally.data.repository.SessionRepository
 import com.jaeyun.tally.data.repository.SubjectRepository
+import com.jaeyun.tally.data.repository.WeeklyGoalRepository
 import com.jaeyun.tally.data.room.TallyDatabase
 import com.jaeyun.tally.data.usagestats.AppClassifier
 import com.jaeyun.tally.data.usagestats.UsageEventSource
@@ -70,6 +71,10 @@ class AppContainer(private val appContext: Context) {
             exportDir = File(appContext.cacheDir, "exports"),
             selfPackage = appContext.packageName,
         )
+    }
+
+    val weeklyGoalRepository: WeeklyGoalRepository by lazy {
+        WeeklyGoalRepository(database, settingsStore, debugBuild = debuggable)
     }
 
     val usageEventSource: UsageEventSource by lazy { UsageEventSource(appContext) }

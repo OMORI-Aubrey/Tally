@@ -7,11 +7,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jaeyun.tally.appContainer
 import com.jaeyun.tally.data.repository.SessionRepository
+import com.jaeyun.tally.data.repository.WeeklyGoalRepository
 import com.jaeyun.tally.data.room.StudySession
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -66,6 +68,7 @@ sealed interface RecordsUiState {
 /** 기록 탭 (§8.4). P1에서는 세션 목록만 둔다. 판정·이번 주·누적 섹션은 P6·P7에서 위에 붙는다 */
 class RecordsViewModel(
     sessions: SessionRepository,
+    private val goals: WeeklyGoalRepository,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ViewModel() {
@@ -84,9 +87,17 @@ class RecordsViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecordsUiState.Loading)
 
+    /**
+     * 기록 탭에 들어올 때마다 부른다. 지난 목표의 달성 여부를 채우고 이번 주 목표가 없으면 만든다(PLAN.md §4).
+     * 판정 섹션(#28)이 결과를 보여 준다
+     */
+    fun refreshGoals() {
+        viewModelScope.launch { goals.refresh(clock(), zone()) }
+    }
+
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer { RecordsViewModel(appContainer.sessionRepository) }
+            initializer { RecordsViewModel(appContainer.sessionRepository, appContainer.weeklyGoalRepository) }
         }
     }
 }

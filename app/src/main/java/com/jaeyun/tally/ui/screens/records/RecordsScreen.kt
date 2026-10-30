@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jaeyun.tally.R
@@ -44,6 +45,11 @@ fun RecordsScreen(
     viewModel: RecordsViewModel = viewModel(factory = RecordsViewModel.Factory),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    // 들어올 때와 앱으로 돌아올 때마다 주 경계를 처리한다(지난 목표 판정, 이번 주 목표 생성)
+    LifecycleResumeEffect(viewModel) {
+        viewModel.refreshGoals()
+        onPauseOrDispose { }
+    }
     when (val state = uiState) {
         RecordsUiState.Loading -> Box(modifier.fillMaxSize())
         RecordsUiState.Empty -> RecordsEmpty(modifier)
