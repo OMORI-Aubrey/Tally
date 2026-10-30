@@ -14,4 +14,18 @@ data class WeekStats(
     val lfsSec: Int,
     val focusSec: Int,
     val sessionSec: Int,
-)
+) {
+    companion object {
+        /** 그 주에 시작한 [sessions] 중 통계에 셀 세션으로 값을 낸다. 셀 세션이 없으면 null(비교할 사실이 없다) */
+        fun of(sessions: List<SessionStats>): WeekStats? {
+            val valid = sessions.filter { it.countsInStats }
+            if (valid.isEmpty()) return null
+            return WeekStats(
+                interruptionsPerSession = valid.sumOf { it.interruptionCount }.toFloat() / valid.size,
+                lfsSec = (valid.sumOf { it.lfsSec.toLong() } / valid.size).toInt(),
+                focusSec = valid.sumOf { it.tFocusSec.toLong() }.toInt(),
+                sessionSec = (valid.sumOf { it.tTotalSec.toLong() } / valid.size).toInt(),
+            )
+        }
+    }
+}

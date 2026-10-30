@@ -61,6 +61,19 @@ object GoalSuggester {
         }
     }
 
+    /** [week]의 [metric] 값. 단위는 [GoalMetric]을 따른다(`LFS`·순공은 분, 이탈은 회) */
+    fun valueOf(metric: GoalMetric, week: WeekStats): Float = when (metric) {
+        GoalMetric.INTERRUPTION -> week.interruptionsPerSession
+        GoalMetric.LFS -> week.lfsSec / 60f
+        GoalMetric.FOCUS_TOTAL -> week.focusSec / 60f
+    }
+
+    /** 목표를 달성했는지. 이탈은 목표 이하, `LFS`·순공은 목표 이상이면 달성이다(목표값과 같아도 달성) */
+    fun isAchieved(metric: GoalMetric, achievedValue: Float, targetValue: Float): Boolean = when (metric) {
+        GoalMetric.INTERRUPTION -> achievedValue <= targetValue
+        GoalMetric.LFS, GoalMetric.FOCUS_TOTAL -> achievedValue >= targetValue
+    }
+
     /** 평균 세션 길이가 기준선의 ±20% 안이다. 경계값은 안에 넣는다 */
     internal fun isSessionLengthComparable(weekSessionSec: Int, baselineSessionSec: Int): Boolean {
         val week = weekSessionSec * 100L
@@ -86,24 +99,24 @@ object GoalSuggester {
         val base = baseline.interruptionsPerSession
         return Goal(
             metric = GoalMetric.INTERRUPTION,
-            currentValue = week.interruptionsPerSession,
+            currentValue = valueOf(GoalMetric.INTERRUPTION, week),
             targetValue = if (stretch) base * (100 - STRETCH_PCT) / 100 else base,
             baselineValue = base,
         )
     }
 
     private fun lfsGoal(week: WeekStats, baseline: Baseline.Active, stretch: Boolean): Goal =
-        minutesGoal(GoalMetric.LFS, week.lfsSec, baseline.lfsSec, stretch)
+        minutesGoal(GoalMetric.LFS, week, baseline.lfsSec, stretch)
 
     private fun focusGoal(week: WeekStats, baseline: Baseline.Active, stretch: Boolean): Goal =
-        minutesGoal(GoalMetric.FOCUS_TOTAL, week.focusSec, baseline.weeklyFocusSec, stretch)
+        minutesGoal(GoalMetric.FOCUS_TOTAL, week, baseline.weeklyFocusSec, stretch)
 
     /** `LFS`·주간 순공 총량은 분 단위로 둔다([GoalMetric]) */
-    private fun minutesGoal(metric: GoalMetric, weekSec: Int, baselineSec: Int, stretch: Boolean): Goal {
+    private fun minutesGoal(metric: GoalMetric, week: WeekStats, baselineSec: Int, stretch: Boolean): Goal {
         val base = baselineSec / 60f
         return Goal(
             metric = metric,
-            currentValue = weekSec / 60f,
+            currentValue = valueOf(metric, week),
             targetValue = if (stretch) base * (100 + STRETCH_PCT) / 100 else base,
             baselineValue = base,
         )
