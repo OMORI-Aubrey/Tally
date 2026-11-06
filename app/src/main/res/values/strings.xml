@@ -238,8 +238,8 @@
     <string name="goal_metric_lfs">최장 평균</string>
     <string name="goal_metric_focus">주간 순공</string>
     <string name="goal_return">지난 4주 평소값입니다</string>
-    <string name="goal_stretch_up">평소보다 5%% 높게 잡았어요</string>
-    <string name="goal_stretch_down">평소보다 5%% 적게 잡았어요</string>
+    <string name="goal_stretch_up">평소보다 5% 높게 잡았어요</string>
+    <string name="goal_stretch_down">평소보다 5% 적게 잡았어요</string>
     <!-- 목표 달성 도장. 빨간 펜으로 쓴다. 미달성은 아무것도 쓰지 않는다 (§7.3) -->
     <string name="badge_achieved">지난주 목표 달성</string>
     <!-- 목표를 정할 때의 값을 알 수 없으면: 목표 3.4회 → 3.2회 -->
