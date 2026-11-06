@@ -40,6 +40,7 @@ import com.jaeyun.tally.ui.components.records.SessionListItem
 import com.jaeyun.tally.ui.components.records.TopAppsList
 import com.jaeyun.tally.ui.components.records.VerdictCard
 import com.jaeyun.tally.ui.components.records.WeekSelector
+import com.jaeyun.tally.ui.components.records.WeekSummary
 import com.jaeyun.tally.ui.components.records.perSessionCountText
 import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.components.text.totalDurationText
@@ -144,6 +145,14 @@ private fun RecordsContent(
                     Column(Modifier.padding(top = 32.dp)) {
                         NoteSectionTitle(stringResource(R.string.top_apps_title))
                         TopAppsList(week.topApps, Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
+            if (week.summary.isNotEmpty()) {
+                item(key = "summary") {
+                    Column(Modifier.padding(top = 32.dp)) {
+                        NoteSectionTitle(stringResource(R.string.summary_title))
+                        WeekSummary(week.summary, Modifier.padding(top = 8.dp))
                     }
                 }
             }
