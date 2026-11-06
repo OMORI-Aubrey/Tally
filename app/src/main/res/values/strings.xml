@@ -274,6 +274,18 @@
     <string name="daily_focus_description">%1$s 순공 %2$s</string>
     <string name="daily_focus_none">%1$s 기록 없음</string>
     <string name="top_apps_title">공부 중 켠 앱</string>
+    <!-- 요약 문단 (§7.4). 좋다·나쁘다를 말하지 않고 사실만 쓴다. 이탈은 동반 발생으로만(§5.5). 지난 주에도 맞도록 "이번 주"를 쓰지 않는다 -->
+    <string name="summary_title">요약</string>
+    <!-- 문장마다 한 줄. 값은 <b>로 굵게 쓴다(서식을 채운 뒤 HTML로 읽는다) -->
+    <!-- 세션 18회, 공부 27시간 30분 중 순공은 최대 21시간 24분이었어요. (%4$s = 이었/였) -->
+    <string name="summary_totals">세션 &lt;b>%1$d회&lt;/b>, 공부 &lt;b>%2$s&lt;/b> 중 순공은 최대 &lt;b>%3$s&lt;/b>%4$s어요.</string>
+    <string name="summary_focus_up">지난주보다 순공이 &lt;b>%1$s&lt;/b> 늘었어요.</string>
+    <string name="summary_focus_down">지난주보다 순공이 &lt;b>%1$s&lt;/b> 줄었어요.</string>
+    <string name="summary_focus_same">순공은 지난주와 같았어요.</string>
+    <!-- 최장 구간 기록을 47분으로 갱신했어요. (%2$s = 으로/로) -->
+    <string name="summary_record">최장 구간 기록을 &lt;b>%1$s&lt;/b>%2$s 갱신했어요.</string>
+    <!-- 이탈 31회 중 12회는 카카오톡에서 있었어요. (%3$s = HTML로 이스케이프한 앱 이름) -->
+    <string name="summary_distraction">이탈 %1$d회 중 &lt;b>%2$d회&lt;/b>는 &lt;b>%3$s&lt;/b>에서 있었어요.</string>
 
     <!-- 누적 섹션 (§8.4 (3)). 통계 세션 15개 미만이면 안내 없이 감춘다 -->
     <string name="cumulative_title">누적</string>

@@ -10,10 +10,13 @@ import com.jaeyun.tally.domain.goal.GoalSuggester
 import com.jaeyun.tally.domain.metrics.MetricsCalculator
 import com.jaeyun.tally.domain.model.Baseline
 import com.jaeyun.tally.domain.model.Category
+import com.jaeyun.tally.domain.model.DistractApp
 import com.jaeyun.tally.domain.model.GoalMetric
 import com.jaeyun.tally.domain.model.PseudoPackage
+import com.jaeyun.tally.domain.model.ReportSentence
 import com.jaeyun.tally.domain.model.Verdict
 import com.jaeyun.tally.domain.model.WeekStats
+import com.jaeyun.tally.domain.model.WeeklyReportInput
 import com.jaeyun.tally.domain.verdict.VerdictResolver
 import com.jaeyun.tally.ui.components.records.TopApp
 import com.jaeyun.tally.ui.components.records.Trend
@@ -78,6 +81,7 @@ data class GoalBadge(val metric: GoalMetric, val fromValue: Float?, val targetVa
  * @param monday 보고 있는 주의 월요일
  * @param firstWeekGap 1주차 격차. 첫 기록의 주가 이번 주이고 그 주를 볼 때만 (§5.8)
  * @param numbers 통계 세션으로 낸 숫자. 그 주에 통계 세션이 없으면 null
+ * @param summary 요약 문단(§7.4). 그 주에 통계 세션이 없으면 비어 있다
  * @param days 그 주의 세션 목록(통계 제외 세션 포함). 비어 있으면 섹션 자리에 안내 한 줄만 둔다
  */
 data class WeekSection(
@@ -88,6 +92,7 @@ data class WeekSection(
     val firstWeekGap: FirstWeekGap?,
     val numbers: WeekNumbers?,
     val topApps: List<TopApp>,
+    val summary: List<ReportSentence>,
     val days: List<SessionDay>,
 )
 
@@ -239,6 +244,7 @@ internal fun buildWeekSection(
     week: WeekRange,
     selfReportedDailyMin: Int?,
     topApps: List<TopApp>,
+    summary: List<ReportSentence>,
     now: Long,
     zone: ZoneId,
 ): WeekSection {
@@ -273,7 +279,30 @@ internal fun buildWeekSection(
         firstWeekGap = firstWeekGap,
         numbers = numbers,
         topApps = topApps,
+        summary = summary,
         days = groupByDay(weekSessions, zone),
+    )
+}
+
+/**
+ * 요약 문단에 쓸 [week]의 사실(§7.4). 통계 세션만 센다. 그 주에 통계 세션이 없으면 null이고 문단을 두지 않는다.
+ *
+ * @param distractApps 그 주 통계 세션의 딴짓 앱별 이탈([distractApps])
+ */
+internal fun weeklyReportInput(sessions: List<StudySession>, week: WeekRange, distractApps: List<DistractApp>, zone: ZoneId): WeeklyReportInput? {
+    val stats = sessions.filter { it.countsInStats }
+    val weekSessions = stats.startedIn(week).ifEmpty { return null }
+    val previous = stats.startedIn(weekRangeOf(week.startAt - 1, zone))
+    return WeeklyReportInput(
+        sessionCount = weekSessions.size,
+        sittingSec = weekSessions.sumOf { it.tTotalSec },
+        focusSec = weekSessions.sumOf { it.tFocusSec },
+        previousFocusSec = previous.takeIf { it.isNotEmpty() }?.sumOf { it.tFocusSec },
+        longestSec = weekSessions.maxOf { it.lfsSec },
+        // 앞선 기록이 0초뿐이면 견줄 기록이 없는 것으로 본다(세션 리포트의 기록과 같다)
+        previousBestLfsSec = stats.filter { it.startAt < week.startAt }.maxOfOrNull { it.lfsSec }?.takeIf { it > 0 },
+        interruptionCount = weekSessions.sumOf { it.interruptionCount },
+        distractApps = distractApps,
     )
 }
 
@@ -332,24 +361,30 @@ internal fun trend(value: Int, previous: Int): Trend = when {
 internal const val MAX_TOP_APPS = 5
 
 /**
- * 공부 중 켠 앱 (§8.4 (2)). 딴짓 구간만 앱별로 묶어 횟수(구간 수)와 시간을 센다. 화면만 켠 구간은 앱이 아니라 뺀다.
- * 시간이 긴 순서, 같으면 횟수가 많은 순서로 [MAX_TOP_APPS]개까지. 이름을 모르는 앱은 패키지 이름을 쓴다.
+ * 딴짓 구간을 앱별로 묶어 횟수(구간 수)와 시간을 센다. 화면만 켠 구간은 앱이 아니라 뺀다. 이름을 모르는 앱은 패키지 이름을 쓴다.
  *
  * 같은 분류의 구간을 합칠 때 가장 오래 머문 앱을 대표로 남기므로(§6.2) 앱별 값은 근삿값이다.
  */
-internal fun topApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<TopApp> =
+internal fun distractApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<DistractApp> =
     segments
         .filter { it.category == Category.DISTRACT && it.packageName != PseudoPackage.SCREEN_ON_UNKNOWN }
         .groupBy { it.packageName }
         .map { (pkg, appSegments) ->
-            TopApp(
+            DistractApp(
                 appLabel = appLabels[pkg] ?: pkg,
                 count = appSegments.size,
                 durationSec = (appSegments.sumOf { it.endAt - it.startAt } / 1000).toInt(),
             )
         }
-        .sortedWith(compareByDescending<TopApp> { it.durationSec }.thenByDescending { it.count })
+
+/**
+ * 공부 중 켠 앱 (§8.4 (2)). [distractApps]를 시간이 긴 순서, 같으면 횟수가 많은 순서로 [MAX_TOP_APPS]개까지.
+ */
+internal fun topApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<TopApp> =
+    distractApps(segments, appLabels)
+        .sortedWith(compareByDescending<DistractApp> { it.durationSec }.thenByDescending { it.count })
         .take(MAX_TOP_APPS)
+        .map { TopApp(it.appLabel, it.count, it.durationSec) }
 
 /** 누적 섹션이 보이는 통계 세션 수 (§8.4 (3)). 기준선 완화 플래그는 적용하지 않는다(PLAN.md §4) */
 internal const val CUMULATIVE_MIN_SESSIONS = 15
