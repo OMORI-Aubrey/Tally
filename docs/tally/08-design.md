@@ -23,7 +23,7 @@
 | `PaperLine` | `#CFDDEA` | 노트 가로줄, 스프링 구멍 테두리 |
 | `MarginLine` | `#EBA8A8` | 빨간 여백선, 지표 카드 윗선 |
 | `SpiralHole` | `#E6E0D2` | 왼쪽 스프링 구멍 |
-| `StickyNote` | `#FFF3A3` | 포스트잇(격차 포스트잇, 권한 순서 안내) |
+| `StickyNote` | `#FFF3A3` | 포스트잇(격차 포스트잇, 권한 순서 안내, 이번 주 목표, 1주차 격차) |
 | `IndexCard` | `#FFFFFF` | 지표 카드 |
 
 **필기구 (글씨·선)**
@@ -33,15 +33,15 @@
 | `Pencil` | `#2C2C2A` | 기본 글씨, 손그림 선 |
 | `PencilSoft` | `#6B675C` | L3 보조 글씨, 안내 문구. 종이 위 대비 5.5:1 |
 | `PencilFaint` | `#948F84` | 한발 물러난 글씨(통계 제외 세션, 소제목 점선). 대비 3.1:1이라 큰 글씨에만 |
-| `BluePen` | `#2B4C7E` | 강조 숫자(경과 시간, 온보딩 `11분`, 주간 요약 줄 숫자, 격차 포스트잇의 최장 구간, 권한 순서 번호), 과소평가 표시 |
-| `RedPen` | `#C8352E` | **세 곳에만:** 목표 달성 도장(P6), 과대평가 표시, 데이터 전체 삭제 |
+| `BluePen` | `#2B4C7E` | 강조 숫자(경과 시간, 온보딩 `11분`, 주간 요약 줄 숫자, 격차 포스트잇의 최장 구간, 권한 순서 번호, 목표값, 1주차 격차의 실측), 판정 문구, 지난주 비교값과 화살표, 과소평가 표시 |
+| `RedPen` | `#C8352E` | **세 곳에만:** 목표 달성 도장(`AchievementBadge`), 과대평가 표시, 데이터 전체 삭제. 판정 문구는 부정적이어도 첨삭처럼 읽히지 않게 파란 볼펜으로 쓴다 |
 
 **꾸밈**
 
 | 토큰 | 값 | 쓰임 |
 |---|---|---|
 | `Highlighter` | `#FFE27A` | 고른 것: 고른 과목 칩, 선택된 탭, 앱 분류의 고른 쪽 |
-| `HighlighterSoft` | `#FEECAB` | 시작 버튼 칠, 순공 강조 |
+| `HighlighterSoft` | `#FEECAB` | 시작 버튼 칠, 순공 강조(리포트·기록 탭), 요일별 막대 |
 | `TapeBlue`·`TapePink`·`TapeMint` | `#BFDDEF`·`#F5C9C9`·`#CDE8C4` | 과목 칩 테이프(셋을 돌려 쓴다), 포스트잇 테이프(`TapeBlue`), 하단 탭(타이머 파랑·기록 분홍·설정 민트) |
 
 **구간** — 타임라인 스트립, 이탈 목록, 앱 분류 화면이 같은 규칙을 쓴다.
@@ -71,13 +71,13 @@
 |---|---|---|
 | `displayLarge` | 개구체 Bold 84/92 | 타이머 RUNNING 경과 시간 |
 | `displayMedium` | 개구체 Bold 52/64 | L1 최대: 시작 버튼, 온보딩 `11분`, 격차 포스트잇의 최장 구간 |
-| `headlineLarge` | 개구체 Bold 36/48 | L1: 최장 구간·조각 수, RUNNING의 과목 |
-| `headlineMedium` | 펜체 44/64 | 판정 문구 (P6, 아직 쓰는 곳 없음) |
-| `titleLarge` | 개구체 Bold 24/32 | L2: 순공 줄(타임라인 없는 세션은 공부 줄), 지표 카드 값, 손그림 네모 버튼 글자, 기록 탭 날짜, 권한 순서 번호, 온보딩 헤드라인 |
-| `bodyLarge` | 개구체 24/32 | 본문: `공부 … · 딴짓 …` 줄, 목록 항목, 입력창, 질문, 고르지 않은 탭·칩·선택지 |
-| `bodyMedium` | 펜체 26/34 | L3: 메타, 근거, 라벨, 주간 요약 줄, 안내 |
+| `headlineLarge` | 개구체 Bold 36/48 | L1: 최장 구간·조각 수, RUNNING의 과목, 기록 탭 이번 주 섹션의 최장·세션당 이탈 |
+| `headlineMedium` | 펜체 44/64 | 판정 문구 — 기록 탭에서 가장 큰 글씨 |
+| `titleLarge` | 개구체 Bold 24/32 | L2: 순공 줄(타임라인 없는 세션은 공부 줄), 지표 카드 값, 손그림 네모 버튼 글자, 기록 탭 날짜·주 범위·순공/공부/딴짓·집중 밀도·목표 값·누적 값, 목표 달성 도장, 권한 순서 번호, 온보딩 헤드라인 |
+| `bodyLarge` | 개구체 24/32 | 본문: `공부 … · 딴짓 …` 줄, 목록 항목, 입력창, 질문, 고르지 않은 탭·칩·선택지, 요약 문단(값은 `<b>`로 같은 글꼴의 Bold) |
+| `bodyMedium` | 펜체 26/34 | L3: 메타, 근거(판정 근거 포함), 라벨, 주간 요약 줄, 안내, 지난주 비교값, 누적 섹션의 괄호 |
 | `labelLarge` | 개구체 Bold 24/32 | 선택된 탭·고른 칩·앱 분류의 고른 쪽(bodyLarge의 굵은 짝), 세션 목록의 과목 이름 |
-| `labelMedium` | 펜체 18/24 | 캡션: 범례, 안내 한 줄, 섹션 머리말 |
+| `labelMedium` | 펜체 18/24 | 캡션: 범례, 안내 한 줄, 섹션 머리말, 요일별 막대의 요일 |
 
 쓰지 않는 나머지 슬롯도 개구체로 바꿔 Material 기본 컴포넌트에 시스템 글꼴이 섞이지 않게 했다.
 
@@ -87,16 +87,16 @@
 |---|---|---|
 | `Modifier.notebookPaper()` | 종이 + 가로줄(32dp 간격) + 빨간 여백선 + 왼쪽 스프링 구멍. 줄은 화면에 고정이라 스크롤해도 움직이지 않는다. 글자를 줄에 맞추지는 않는다 | 모든 화면 바탕(`TallyApp`) |
 | `NotebookPaper.ContentStart` (56dp) | 내용의 왼쪽 시작. 여백선 오른쪽 | 모든 화면 |
-| `TapedNote` | 마스킹테이프로 붙인 포스트잇, 살짝 기울어짐 | 격차 포스트잇, 권한 순서 안내 |
-| `HighlightedText` | 글자 아래쪽 절반에 형광펜 | RUNNING의 과목, 순공, 기록 탭 날짜 머리말 |
+| `TapedNote` | 마스킹테이프로 붙인 포스트잇, 살짝 기울어짐 | 격차 포스트잇, 권한 순서 안내, 이번 주 목표, 1주차 격차 |
+| `HighlightedText` | 글자 아래쪽 절반에 형광펜 | RUNNING의 과목, 순공(리포트·기록 탭), 기록 탭 날짜 머리말 |
 | `Modifier.pencilStrike()` | 살짝 기울어진 연필 가운뎃줄. 요소마다 따로 긋는다 | 통계 제외 세션 |
-| `NoteSectionTitle` | 펜 글씨 소제목 + 점선 밑줄 | 리포트 `흐름`·`딴짓한 순간`, 설정 `개발자` |
+| `NoteSectionTitle` | 펜 글씨 소제목 + 점선 밑줄 | 리포트 `흐름`·`딴짓한 순간`, 설정 `개발자`, 기록 탭 `공부 중 켠 앱`·`요약`·`세션 목록`·`누적` |
 | `NoteTopBar` | `← 닫기 ········· 세션 리포트`처럼 왼쪽 돌아가기, 오른쪽 화면 이름 | 세션 리포트, 앱 분류 |
 | `SketchCircleButton` | 연필로 두 번 덧그린 동그라미 안을 형광펜으로 칠한 버튼 | 타이머 `[시작]` |
 | `SketchBoxButton` | 손으로 그린 네모 테두리 버튼. 누를 수 없으면 흐리게 | `[종료]`, 체감 `[확인]`, 다이얼로그 선택지, `[권한 설정하기]`, `[시작하기]`, 미분류 앱 `[딴짓]`·`[허용]` |
 | `IndexTabBar` | 노트 아래로 삐져나온 색인 탭. 선택된 탭이 더 길게 튀어나오고 형광펜 색 | 하단 탭 |
 
-**아이콘** — 앱 아이콘은 연필로 그린 스톱워치이고, 형광펜으로 칠한 부분이 공부한 시간이다. 종이 바탕 적응형 아이콘 + 테마 아이콘용 단색 레이어(`mipmap-anydpi/ic_launcher.xml`, PNG 없음). 앱 안 로고(`TallyLogo`)도 같은 그림 + "Tally". 그 밖의 아이콘은 벡터 3개: 연필 화살표(`ic_arrow_right`, 손글씨 글꼴에 `›`가 없어 그림으로 그린다), 빗금 친 눈(`ic_hidden`), ⋮(`ic_more_vert`).
+**아이콘** — 앱 아이콘은 연필로 그린 스톱워치이고, 형광펜으로 칠한 부분이 공부한 시간이다. 종이 바탕 적응형 아이콘 + 테마 아이콘용 단색 레이어(`mipmap-anydpi/ic_launcher.xml`, PNG 없음). 앱 안 로고(`TallyLogo`)도 같은 그림 + "Tally". 그 밖의 아이콘은 벡터 3개: 연필 화살표(`ic_arrow_right`, 손글씨 글꼴에 `›`·`→`·`↑`가 없어 그림으로 그린다 — 돌려서 주 선택 `◀ ▶`, 지난주 비교 `↑ ↓`, 목표 `→`, 인식 격차 추이 `→`에도 쓴다), 빗금 친 눈(`ic_hidden`), ⋮(`ic_more_vert`).
 
 ## 컴포넌트
 
@@ -118,7 +118,19 @@
 | `timer/` | `SubjectChipRow`, `SubjectListItem`, `WeeklySummaryLine` | 과목 칩, 과목 시트 한 줄, 주간 요약 줄 |
 | `report/` | `GapNote`, `StructureHeadline`, `TimelineStrip`, `TotalsRow`, `MetricCard`, `DistractionListItem`, `UnclassifiedAppPrompt` | 리포트 ⓪~⑥([07-screens](07-screens.md#세션-리포트)) |
 | `records/` | `SessionListItem` | 기록 탭 세션 목록 한 줄 |
+| | `VerdictCard` | 판정 문구(파란 볼펜, `headlineMedium`)와 근거 줄. 총량 가드로 내린 주는 전용 문구 |
+| | `GoalCard` | 이번 주 목표 포스트잇: 지표 이름, `4.4회 → 3.4회`(목표값 파란 볼펜), 평소값·5% 안내 |
+| | `AchievementBadge` | 빨간 펜 도장 `지난주 목표 달성`(살짝 기울어진 둥근 네모 테두리) + 지난 값 → 달성 값 |
+| | `GoalValueText` | 목표 값 표기 함수(`decimalText`, `perSessionCountText`, `goalMetricLabel`, `goalValueText`) |
+| | `WeekSelector` | `◀ 9월 1일 ~ 9월 7일 ▶`. 더 갈 주가 없으면 화살표를 흐리게 |
+| | `FirstWeekGapNote` | 1주차 격차 포스트잇 |
+| | `ComparisonStat` | 이름 · 값 + 파란 볼펜 화살표와 `지난주 …`. 좁으면 비교값이 다음 줄로 |
+| | `DailyBarChart` | 월~일 순공 막대. `Row`·`Box` 높이 비율, 순공 0인 날은 요일만 |
+| | `TopAppsList` | 공부 중 켠 앱 `순위 · 앱 이름 · 횟수 · 시간` |
+| | `WeekSummary` | 요약 문단: 문장마다 한 줄, 값은 굵게 |
+| | `CumulativeStat` | 누적 섹션 한 줄: 이름 · 값 · 흐린 괄호(지난달 값, 표본 수, 날짜) |
+| | `GapTrend` | 인식 격차 주별 추이 `+38% → +31% → +24%` |
 | `settings/` | `SettingsRow` | 설정 탭 한 줄: 설명·상태 줄, 화살표, 빨간 이름, 누를 수 없는 줄 |
 | | `AppClassificationListItem` | 앱 분류 한 줄: 색 점 + 이름 + `딴짓 | 허용` |
 
-`TimelineStrip`은 Canvas 없이 `Row` + `weight(구간 길이)`로만 그린다. 외부 차트 라이브러리는 쓰지 않는다.
+`TimelineStrip`은 Canvas 없이 `Row` + `weight(구간 길이)`로, `DailyBarChart`는 `Row`·`Box` 높이 비율로만 그린다. 외부 차트 라이브러리는 쓰지 않는다.

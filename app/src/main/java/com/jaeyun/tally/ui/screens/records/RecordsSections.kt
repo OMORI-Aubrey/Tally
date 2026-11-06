@@ -7,12 +7,16 @@ import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.data.room.toSessionStats
 import com.jaeyun.tally.domain.baseline.BaselineCalculator
 import com.jaeyun.tally.domain.goal.GoalSuggester
+import com.jaeyun.tally.domain.metrics.MetricsCalculator
 import com.jaeyun.tally.domain.model.Baseline
 import com.jaeyun.tally.domain.model.Category
+import com.jaeyun.tally.domain.model.DistractApp
 import com.jaeyun.tally.domain.model.GoalMetric
 import com.jaeyun.tally.domain.model.PseudoPackage
+import com.jaeyun.tally.domain.model.ReportSentence
 import com.jaeyun.tally.domain.model.Verdict
 import com.jaeyun.tally.domain.model.WeekStats
+import com.jaeyun.tally.domain.model.WeeklyReportInput
 import com.jaeyun.tally.domain.verdict.VerdictResolver
 import com.jaeyun.tally.ui.components.records.TopApp
 import com.jaeyun.tally.ui.components.records.Trend
@@ -20,6 +24,7 @@ import com.jaeyun.tally.util.WeekRange
 import com.jaeyun.tally.util.weekRangeOf
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 import kotlin.math.roundToInt
@@ -76,6 +81,7 @@ data class GoalBadge(val metric: GoalMetric, val fromValue: Float?, val targetVa
  * @param monday 보고 있는 주의 월요일
  * @param firstWeekGap 1주차 격차. 첫 기록의 주가 이번 주이고 그 주를 볼 때만 (§5.8)
  * @param numbers 통계 세션으로 낸 숫자. 그 주에 통계 세션이 없으면 null
+ * @param summary 요약 문단(§7.4). 그 주에 통계 세션이 없으면 비어 있다
  * @param days 그 주의 세션 목록(통계 제외 세션 포함). 비어 있으면 섹션 자리에 안내 한 줄만 둔다
  */
 data class WeekSection(
@@ -86,6 +92,7 @@ data class WeekSection(
     val firstWeekGap: FirstWeekGap?,
     val numbers: WeekNumbers?,
     val topApps: List<TopApp>,
+    val summary: List<ReportSentence>,
     val days: List<SessionDay>,
 )
 
@@ -117,6 +124,33 @@ data class WeekNumbers(
     val averageSessionSec: Int,
     val dailyFocusSec: List<Int>,
 )
+
+/**
+ * 누적 섹션 (§8.4 (3)). 고른 주와 관계없이 늘 같은 값이다. 모두 통계에 셀 세션(`countsInStats`)만 센다
+ *
+ * @param thisMonthFocusSec 이번 달 순공. 0이면 줄을 감춘다
+ * @param lastMonthFocusSec 지난달 순공. 지난달 통계 세션이 없거나 0이면 null이고 괄호를 감춘다
+ * @param focusHours 최고·최저 집중 시간대. 5세션 이상인 시간대가 둘 이상이고 둘의 %가 다를 때만 (§5.7)
+ * @param longest 최장 구간 기록. 모든 세션의 `LFS`가 0이면 null
+ * @param gapTrendPct 인식 격차 `G`(§5.2 부호, 반올림)의 주별 추이. 오래된 순서이고 2주 미만이면 비어 있다
+ */
+data class CumulativeSection(
+    val thisMonthFocusSec: Int,
+    val lastMonthFocusSec: Int?,
+    val totalFocusSec: Int,
+    val focusHours: FocusHours?,
+    val longest: LongestRecord?,
+    val gapTrendPct: List<Int>,
+)
+
+/** 2시간 시간대 하나. [startHour]부터 [HOUR_BAND_HOURS]시간이다(`14~16시`). [sessionCount]는 표본 수(§5.7) */
+data class HourBand(val startHour: Int, val densityPct: Int, val sessionCount: Int)
+
+/** 집중이 가장 잘 / 가장 덜 유지된 시간대 */
+data class FocusHours(val best: HourBand, val worst: HourBand)
+
+/** 지금까지 가장 긴 `LFS`와 그 세션을 시작한 날 */
+data class LongestRecord(val lfsSec: Int, val date: LocalDate)
 
 /** [week]에 시작한 세션 */
 internal fun List<StudySession>.startedIn(week: WeekRange): List<StudySession> = filter { it.startAt in week }
@@ -210,6 +244,7 @@ internal fun buildWeekSection(
     week: WeekRange,
     selfReportedDailyMin: Int?,
     topApps: List<TopApp>,
+    summary: List<ReportSentence>,
     now: Long,
     zone: ZoneId,
 ): WeekSection {
@@ -244,7 +279,30 @@ internal fun buildWeekSection(
         firstWeekGap = firstWeekGap,
         numbers = numbers,
         topApps = topApps,
+        summary = summary,
         days = groupByDay(weekSessions, zone),
+    )
+}
+
+/**
+ * 요약 문단에 쓸 [week]의 사실(§7.4). 통계 세션만 센다. 그 주에 통계 세션이 없으면 null이고 문단을 두지 않는다.
+ *
+ * @param distractApps 그 주 통계 세션의 딴짓 앱별 이탈([distractApps])
+ */
+internal fun weeklyReportInput(sessions: List<StudySession>, week: WeekRange, distractApps: List<DistractApp>, zone: ZoneId): WeeklyReportInput? {
+    val stats = sessions.filter { it.countsInStats }
+    val weekSessions = stats.startedIn(week).ifEmpty { return null }
+    val previous = stats.startedIn(weekRangeOf(week.startAt - 1, zone))
+    return WeeklyReportInput(
+        sessionCount = weekSessions.size,
+        sittingSec = weekSessions.sumOf { it.tTotalSec },
+        focusSec = weekSessions.sumOf { it.tFocusSec },
+        previousFocusSec = previous.takeIf { it.isNotEmpty() }?.sumOf { it.tFocusSec },
+        longestSec = weekSessions.maxOf { it.lfsSec },
+        // 앞선 기록이 0초뿐이면 견줄 기록이 없는 것으로 본다(세션 리포트의 기록과 같다)
+        previousBestLfsSec = stats.filter { it.startAt < week.startAt }.maxOfOrNull { it.lfsSec }?.takeIf { it > 0 },
+        interruptionCount = weekSessions.sumOf { it.interruptionCount },
+        distractApps = distractApps,
     )
 }
 
@@ -303,21 +361,98 @@ internal fun trend(value: Int, previous: Int): Trend = when {
 internal const val MAX_TOP_APPS = 5
 
 /**
- * 공부 중 켠 앱 (§8.4 (2)). 딴짓 구간만 앱별로 묶어 횟수(구간 수)와 시간을 센다. 화면만 켠 구간은 앱이 아니라 뺀다.
- * 시간이 긴 순서, 같으면 횟수가 많은 순서로 [MAX_TOP_APPS]개까지. 이름을 모르는 앱은 패키지 이름을 쓴다.
+ * 딴짓 구간을 앱별로 묶어 횟수(구간 수)와 시간을 센다. 화면만 켠 구간은 앱이 아니라 뺀다. 이름을 모르는 앱은 패키지 이름을 쓴다.
  *
  * 같은 분류의 구간을 합칠 때 가장 오래 머문 앱을 대표로 남기므로(§6.2) 앱별 값은 근삿값이다.
  */
-internal fun topApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<TopApp> =
+internal fun distractApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<DistractApp> =
     segments
         .filter { it.category == Category.DISTRACT && it.packageName != PseudoPackage.SCREEN_ON_UNKNOWN }
         .groupBy { it.packageName }
         .map { (pkg, appSegments) ->
-            TopApp(
+            DistractApp(
                 appLabel = appLabels[pkg] ?: pkg,
                 count = appSegments.size,
                 durationSec = (appSegments.sumOf { it.endAt - it.startAt } / 1000).toInt(),
             )
         }
-        .sortedWith(compareByDescending<TopApp> { it.durationSec }.thenByDescending { it.count })
+
+/**
+ * 공부 중 켠 앱 (§8.4 (2)). [distractApps]를 시간이 긴 순서, 같으면 횟수가 많은 순서로 [MAX_TOP_APPS]개까지.
+ */
+internal fun topApps(segments: List<AppSegment>, appLabels: Map<String, String>): List<TopApp> =
+    distractApps(segments, appLabels)
+        .sortedWith(compareByDescending<DistractApp> { it.durationSec }.thenByDescending { it.count })
         .take(MAX_TOP_APPS)
+        .map { TopApp(it.appLabel, it.count, it.durationSec) }
+
+/** 누적 섹션이 보이는 통계 세션 수 (§8.4 (3)). 기준선 완화 플래그는 적용하지 않는다(PLAN.md §4) */
+internal const val CUMULATIVE_MIN_SESSIONS = 15
+
+/** 집중 시간대 한 구간의 길이(시간) */
+internal const val HOUR_BAND_HOURS = 2
+
+/** 시간대를 보일 최소 표본 수 (§5.7) */
+internal const val HOUR_BAND_MIN_SESSIONS = 5
+
+/** 인식 격차 추이에 보일 최근 주 수 */
+internal const val GAP_TREND_WEEKS = 4
+
+/**
+ * 누적 섹션 (PLAN.md §4). 통계 세션이 [CUMULATIVE_MIN_SESSIONS]개 미만이면 null — 섹션 전체를 안내 없이 감춘다(§8.5.1).
+ * 달은 세션 시작 시각의 로컬 날짜로 나눈다.
+ */
+internal fun buildCumulativeSection(sessions: List<StudySession>, now: Long, zone: ZoneId): CumulativeSection? {
+    val stats = sessions.filter { it.countsInStats }
+    if (stats.size < CUMULATIVE_MIN_SESSIONS) return null
+
+    val thisMonth = YearMonth.from(Instant.ofEpochMilli(now).atZone(zone))
+    val focusByMonth = stats
+        .groupBy { YearMonth.from(Instant.ofEpochMilli(it.startAt).atZone(zone)) }
+        .mapValues { (_, monthSessions) -> monthSessions.sumOf { it.tFocusSec } }
+
+    // 같은 값이면 먼저 세운 기록. maxByOrNull은 최댓값 중 첫 번째를 돌려준다
+    val longest = stats.filter { it.lfsSec > 0 }.sortedBy { it.startAt }.maxByOrNull { it.lfsSec }
+
+    return CumulativeSection(
+        thisMonthFocusSec = focusByMonth[thisMonth] ?: 0,
+        lastMonthFocusSec = focusByMonth[thisMonth.minusMonths(1)]?.takeIf { it > 0 },
+        totalFocusSec = stats.sumOf { it.tFocusSec },
+        focusHours = focusHours(stats, zone),
+        longest = longest?.let { LongestRecord(it.lfsSec, Instant.ofEpochMilli(it.startAt).atZone(zone).toLocalDate()) },
+        gapTrendPct = gapTrendPct(stats, zone),
+    )
+}
+
+/**
+ * 최고·최저 집중 시간대. 세션을 시작 시각이 속한 2시간 구간에 통째로 넣는다(자정을 넘겨도). 밀도는 기간 합으로 낸다.
+ * [HOUR_BAND_MIN_SESSIONS]개 이상인 구간만 후보이고, 후보가 둘 이상이며 최고와 최저의 %가 다를 때만 낸다.
+ * 밀도가 같으면 세션이 많은 구간, 그것도 같으면 이른 시간대를 고른다.
+ */
+private fun focusHours(sessions: List<StudySession>, zone: ZoneId): FocusHours? {
+    val bands = sessions
+        .groupBy { Instant.ofEpochMilli(it.startAt).atZone(zone).hour / HOUR_BAND_HOURS * HOUR_BAND_HOURS }
+        .filterValues { it.size >= HOUR_BAND_MIN_SESSIONS }
+        .map { (startHour, band) -> HourBand(startHour, densityPct(band.sumOf { it.tFocusSec }, band.sumOf { it.tTotalSec }), band.size) }
+    if (bands.size < 2) return null
+    val best = bands.sortedWith(compareByDescending<HourBand> { it.densityPct }.thenByDescending { it.sessionCount }.thenBy { it.startHour }).first()
+    val worst = bands.sortedWith(compareBy<HourBand> { it.densityPct }.thenByDescending { it.sessionCount }.thenBy { it.startHour }).first()
+    return if (best.densityPct == worst.densityPct) null else FocusHours(best, worst)
+}
+
+/**
+ * 인식 격차 주별 추이. 체감을 답한 세션의 `G`를 주마다 낸다(한 주에 둘 이상이면 합으로). 답이 있는 주만,
+ * 최근 [GAP_TREND_WEEKS]주까지 오래된 순서다. 값 하나는 추이가 아니라 2주 미만이면 빈 목록이다.
+ */
+private fun gapTrendPct(sessions: List<StudySession>, zone: ZoneId): List<Int> {
+    val weekly = sessions
+        .filter { it.perceivedFocusMin != null }
+        .groupBy { weekRangeOf(it.startAt, zone).startAt }
+        .toSortedMap()
+        .values
+        .mapNotNull { week ->
+            MetricsCalculator.perceptionGapPct(week.sumOf { it.perceivedFocusMin ?: 0 }, week.sumOf { it.tFocusSec })?.roundToInt()
+        }
+        .takeLast(GAP_TREND_WEEKS)
+    return if (weekly.size >= 2) weekly else emptyList()
+}

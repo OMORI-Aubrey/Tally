@@ -238,8 +238,8 @@
     <string name="goal_metric_lfs">최장 평균</string>
     <string name="goal_metric_focus">주간 순공</string>
     <string name="goal_return">지난 4주 평소값입니다</string>
-    <string name="goal_stretch_up">평소보다 5%% 높게 잡았어요</string>
-    <string name="goal_stretch_down">평소보다 5%% 적게 잡았어요</string>
+    <string name="goal_stretch_up">평소보다 5% 높게 잡았어요</string>
+    <string name="goal_stretch_down">평소보다 5% 적게 잡았어요</string>
     <!-- 목표 달성 도장. 빨간 펜으로 쓴다. 미달성은 아무것도 쓰지 않는다 (§7.3) -->
     <string name="badge_achieved">지난주 목표 달성</string>
     <!-- 목표를 정할 때의 값을 알 수 없으면: 목표 3.4회 → 3.2회 -->
@@ -274,6 +274,38 @@
     <string name="daily_focus_description">%1$s 순공 %2$s</string>
     <string name="daily_focus_none">%1$s 기록 없음</string>
     <string name="top_apps_title">공부 중 켠 앱</string>
+    <!-- 요약 문단 (§7.4). 좋다·나쁘다를 말하지 않고 사실만 쓴다. 이탈은 동반 발생으로만(§5.5). 지난 주에도 맞도록 "이번 주"를 쓰지 않는다 -->
+    <string name="summary_title">요약</string>
+    <!-- 문장마다 한 줄. 값은 <b>로 굵게 쓴다(서식을 채운 뒤 HTML로 읽는다) -->
+    <!-- 세션 18회, 공부 27시간 30분 중 순공은 최대 21시간 24분이었어요. (%4$s = 이었/였) -->
+    <string name="summary_totals">세션 &lt;b>%1$d회&lt;/b>, 공부 &lt;b>%2$s&lt;/b> 중 순공은 최대 &lt;b>%3$s&lt;/b>%4$s어요.</string>
+    <string name="summary_focus_up">지난주보다 순공이 &lt;b>%1$s&lt;/b> 늘었어요.</string>
+    <string name="summary_focus_down">지난주보다 순공이 &lt;b>%1$s&lt;/b> 줄었어요.</string>
+    <string name="summary_focus_same">순공은 지난주와 같았어요.</string>
+    <!-- 최장 구간 기록을 47분으로 갱신했어요. (%2$s = 으로/로) -->
+    <string name="summary_record">최장 구간 기록을 &lt;b>%1$s&lt;/b>%2$s 갱신했어요.</string>
+    <!-- 이탈 31회 중 12회는 카카오톡에서 있었어요. (%3$s = HTML로 이스케이프한 앱 이름) -->
+    <string name="summary_distraction">이탈 %1$d회 중 &lt;b>%2$d회&lt;/b>는 &lt;b>%3$s&lt;/b>에서 있었어요.</string>
+
+    <!-- 누적 섹션 (§8.4 (3)). 통계 세션 15개 미만이면 안내 없이 감춘다 -->
+    <string name="cumulative_title">누적</string>
+    <string name="cumulative_month">이번 달 순공</string>
+    <string name="cumulative_total">전체 순공</string>
+    <!-- 이번 달 순공 최대 68h 12m (지난달 54h 30m) -->
+    <string name="cumulative_last_month">(지난달 %1$s)</string>
+    <string name="cumulative_best_hours">최고 집중 시간대</string>
+    <string name="cumulative_worst_hours">최저 집중 시간대</string>
+    <!-- 14~16시 91% -->
+    <string name="cumulative_hours_value">%1$d~%2$d시 %3$d%%</string>
+    <!-- 표본 수 (§5.7): (12세션) -->
+    <string name="cumulative_sessions">(%1$d세션)</string>
+    <string name="cumulative_longest">최장 기록</string>
+    <!-- 47분 (9월 4일) -->
+    <string name="cumulative_date">(%1$d월 %2$d일)</string>
+    <!-- 인식 격차 +38% → +31% → +24%. 화살표는 그림으로 그린다. 양수가 과대평가 (§5.2) -->
+    <string name="cumulative_gap">인식 격차</string>
+    <string name="cumulative_gap_over">+%1$d%%</string>
+    <string name="cumulative_gap_value">%1$d%%</string>
 
     <!-- 시간 표기 (PLAN.md §4). 세션 단위는 한글, 주간·누적 총량은 h m -->
     <string name="duration_seconds">%1$d초</string>

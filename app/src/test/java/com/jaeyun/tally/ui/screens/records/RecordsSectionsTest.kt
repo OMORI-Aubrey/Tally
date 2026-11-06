@@ -5,9 +5,11 @@ import com.jaeyun.tally.data.room.AppSegment
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.room.WeeklyGoal
 import com.jaeyun.tally.domain.model.Category
+import com.jaeyun.tally.domain.model.DistractApp
 import com.jaeyun.tally.domain.model.GoalMetric
 import com.jaeyun.tally.domain.model.PseudoPackage
 import com.jaeyun.tally.domain.model.Verdict
+import com.jaeyun.tally.domain.model.WeeklyReportInput
 import com.jaeyun.tally.ui.components.records.TopApp
 import com.jaeyun.tally.ui.components.records.Trend
 import com.jaeyun.tally.util.weekRangeOf
@@ -42,11 +44,13 @@ private fun session(
     interruptions: Int = 3,
     valid: Boolean = true,
     timeline: Boolean = true,
+    perceivedMin: Int? = null,
 ) = StudySession(
     id = nextId++,
     subjectName = null,
     startAt = startAt,
     endAt = startAt + totalMin * 60_000L,
+    perceivedFocusMin = perceivedMin,
     tTotalSec = totalMin * 60,
     tFocusSec = focusMin * 60,
     tDistSec = (totalMin - focusMin) * 60,
@@ -69,10 +73,18 @@ private fun weekSection(
     sessions: List<StudySession>,
     weekStart: Long = THIS_WEEK.startAt,
     selfReportedDailyMin: Int? = null,
-) = buildWeekSection(sessions, weekRangeOf(weekStart, SEOUL), selfReportedDailyMin, emptyList(), NOW, SEOUL)
+) = buildWeekSection(sessions, weekRangeOf(weekStart, SEOUL), selfReportedDailyMin, emptyList(), emptyList(), NOW, SEOUL)
 
 private fun segment(pkg: String, millis: Long, category: Category = Category.DISTRACT) =
     AppSegment(sessionId = 1, packageName = pkg, category = category, startAt = 0, endAt = millis)
+
+private fun cumulativeSection(sessions: List<StudySession>) = buildCumulativeSection(sessions, NOW, SEOUL)
+
+/** [first]부터 하루씩 [count]개 날짜(`2026-10-01` 꼴) */
+private fun days(first: String, count: Int): List<String> = List(count) { LocalDate.parse(first).plusDays(it.toLong()).toString() }
+
+/** 10월 1일부터 하루 하나씩 10:00에 시작한 기본 세션 [count]개 */
+private fun octoberSessions(count: Int): List<StudySession> = days("2026-10-01", count).map { session(at(it)) }
 
 class RecordsSectionsTest {
 
@@ -337,5 +349,172 @@ class RecordsSectionsTest {
 
         assertEquals(MAX_TOP_APPS, apps.size)
         assertEquals(TopApp("g", 2, 60), apps.first())
+    }
+
+    // 요약 문단의 사실
+
+    @Test
+    fun `딴짓 앱은 다섯 개로 자르지 않고 모두 센다`() {
+        val segments = listOf("a", "b", "c", "d", "e", "f").map { segment(it, 60_000) } + segment(PseudoPackage.SCREEN_ON_UNKNOWN, 60_000)
+
+        assertEquals(6, distractApps(segments, emptyMap()).size)
+    }
+
+    @Test
+    fun `요약 사실은 그 주 통계 세션으로 내고 앞 주와 앞선 기록을 함께 담는다`() {
+        val apps = listOf(DistractApp("카카오톡", 2, 120))
+        val sessions = listOf(
+            session(at("2026-10-26"), totalMin = 60, focusMin = 45, lfsSec = 30 * 60, interruptions = 3),
+            session(at("2026-10-27"), totalMin = 90, focusMin = 80, lfsSec = 50 * 60, interruptions = 1),
+            session(at("2026-10-28"), totalMin = 2, focusMin = 2, valid = false), // 통계 제외
+            session(at("2026-10-20"), focusMin = 40, lfsSec = 40 * 60), // 지난주
+            session(at("2026-10-01"), lfsSec = 45 * 60), // 앞선 기록
+            session(at("2026-11-03"), lfsSec = 70 * 60), // 다음 주는 앞선 기록이 아니다
+        )
+
+        val input = weeklyReportInput(sessions, THIS_WEEK, apps, SEOUL)
+
+        assertEquals(
+            WeeklyReportInput(
+                sessionCount = 2,
+                sittingSec = 150 * 60,
+                focusSec = 125 * 60,
+                previousFocusSec = 40 * 60,
+                longestSec = 50 * 60,
+                previousBestLfsSec = 45 * 60,
+                interruptionCount = 4,
+                distractApps = apps,
+            ),
+            input,
+        )
+    }
+
+    @Test
+    fun `앞 주 세션과 앞선 기록이 없으면 비워 두고 그 주 통계 세션이 없으면 요약을 두지 않는다`() {
+        val firstWeek = listOf(session(at("2026-10-26")), session(at("2026-10-19"), valid = false))
+
+        val input = weeklyReportInput(firstWeek, THIS_WEEK, emptyList(), SEOUL)!!
+        assertNull(input.previousFocusSec)
+        assertNull(input.previousBestLfsSec)
+
+        // 앞선 기록이 0초뿐이면 견줄 기록이 없다
+        assertNull(weeklyReportInput(firstWeek + session(at("2026-10-19"), lfsSec = 0), THIS_WEEK, emptyList(), SEOUL)!!.previousBestLfsSec)
+
+        assertNull(weeklyReportInput(listOf(session(at("2026-10-26"), timeline = false)), THIS_WEEK, emptyList(), SEOUL))
+    }
+
+    // 누적 섹션
+
+    @Test
+    fun `누적 섹션은 통계 세션 15개부터 보인다`() {
+        val sessions = octoberSessions(14) + session(at("2026-10-20"), valid = false) + session(at("2026-10-21"), timeline = false)
+
+        assertNull(cumulativeSection(sessions))
+        assertNotNull(cumulativeSection(sessions + session(at("2026-10-22"))))
+    }
+
+    @Test
+    fun `이번 달과 지난달 순공은 시작 시각의 로컬 날짜로 나눈다`() {
+        val sessions = days("2026-10-02", 9).map { session(at(it)) } +
+            session(at("2026-10-01", "00:30")) + // UTC로는 9월 30일
+            days("2026-09-01", 5).map { session(at(it)) } +
+            session(at("2026-10-20"), valid = false)
+
+        val section = cumulativeSection(sessions)!!
+
+        assertEquals(10 * 45 * 60, section.thisMonthFocusSec)
+        assertEquals(5 * 45 * 60, section.lastMonthFocusSec)
+        assertEquals(15 * 45 * 60, section.totalFocusSec)
+    }
+
+    @Test
+    fun `지난달 기록이 없으면 비교값을 감춘다`() {
+        val sessions = octoberSessions(15) + days("2026-08-01", 3).map { session(at(it)) }
+
+        val section = cumulativeSection(sessions)!!
+
+        assertNull(section.lastMonthFocusSec)
+        assertEquals(18 * 45 * 60, section.totalFocusSec)
+    }
+
+    @Test
+    fun `최고·최저 집중 시간대는 5세션 이상인 시간대에서 고른다`() {
+        val sessions = days("2026-10-01", 5).map { session(at(it, "14:00"), focusMin = 54) } + // 90%
+            days("2026-10-06", 5).map { session(at(it, "22:00"), focusMin = 30) } + // 50%
+            days("2026-10-11", 4).map { session(at(it, "10:00"), focusMin = 60) } + // 100%지만 4세션
+            session(at("2026-10-15", "18:00"))
+
+        val hours = cumulativeSection(sessions)!!.focusHours
+
+        assertEquals(FocusHours(best = HourBand(14, 90, 5), worst = HourBand(22, 50, 5)), hours)
+    }
+
+    @Test
+    fun `시간대 밀도는 세션 평균이 아니라 기간 합으로 낸다`() {
+        val sessions = days("2026-10-01", 4).map { session(at(it, "14:00")) } + // 60분 중 45분
+            session(at("2026-10-05", "15:00"), totalMin = 120, focusMin = 120) +
+            days("2026-10-06", 10).map { session(at(it, "20:00"), focusMin = 30) }
+
+        // 300분 / 360분 = 83%. 세션 밀도 평균이면 80%다
+        assertEquals(HourBand(14, 83, 5), cumulativeSection(sessions)!!.focusHours!!.best)
+    }
+
+    @Test
+    fun `자정을 넘긴 세션은 시작한 시간대에 들어간다`() {
+        val sessions = days("2026-10-01", 5).map { session(at(it, "23:30"), totalMin = 90) } + // 50%
+            days("2026-10-06", 10).map { session(at(it, "10:00")) } // 75%
+
+        assertEquals(
+            FocusHours(best = HourBand(10, 75, 10), worst = HourBand(22, 50, 5)),
+            cumulativeSection(sessions)!!.focusHours,
+        )
+    }
+
+    @Test
+    fun `후보 시간대가 하나뿐이거나 최고와 최저가 같으면 시간대를 감춘다`() {
+        assertNull(cumulativeSection(octoberSessions(15))!!.focusHours)
+
+        val sameDensity = days("2026-10-01", 5).map { session(at(it, "14:00")) } + days("2026-10-06", 10).map { session(at(it, "20:00")) }
+        assertNull(cumulativeSection(sameDensity)!!.focusHours)
+    }
+
+    @Test
+    fun `밀도가 같으면 세션이 많은 시간대를 고른다`() {
+        val sessions = days("2026-10-01", 5).map { session(at(it, "14:00"), focusMin = 54) } +
+            days("2026-10-06", 6).map { session(at(it, "16:00"), focusMin = 54) } +
+            days("2026-10-12", 5).map { session(at(it, "22:00"), focusMin = 30) }
+
+        assertEquals(HourBand(16, 90, 6), cumulativeSection(sessions)!!.focusHours!!.best)
+    }
+
+    @Test
+    fun `최장 기록은 가장 긴 LFS와 그날이고 같으면 먼저 세운 기록이다`() {
+        val sessions = octoberSessions(13) +
+            session(at("2026-10-20"), lfsSec = 47 * 60) +
+            session(at("2026-10-05", "15:00"), lfsSec = 47 * 60) +
+            session(at("2026-10-25"), lfsSec = 60 * 60, valid = false)
+
+        assertEquals(LongestRecord(47 * 60, LocalDate.of(2026, 10, 5)), cumulativeSection(sessions)!!.longest)
+    }
+
+    @Test
+    fun `인식 격차 추이는 답이 있는 주만 최근 4주까지 오래된 순서로 낸다`() {
+        val sessions = octoberSessions(9) +
+            session(at("2026-09-21"), perceivedMin = 60) + // +33%. 4주 밖
+            session(at("2026-09-28"), perceivedMin = 54) + // +20%
+            session(at("2026-10-13"), perceivedMin = 50) + // 같은 주 둘은 합으로: 99분 / 90분 = +10%
+            session(at("2026-10-14"), perceivedMin = 49) +
+            session(at("2026-10-20"), perceivedMin = 45) + // 0%
+            session(at("2026-10-21"), perceivedMin = 90, valid = false) + // 통계 제외
+            session(at("2026-10-27"), perceivedMin = 36) // -20%
+
+        assertEquals(listOf(20, 10, 0, -20), cumulativeSection(sessions)!!.gapTrendPct)
+    }
+
+    @Test
+    fun `격차 답이 한 주뿐이면 추이를 감춘다`() {
+        val sessions = octoberSessions(14) + session(at("2026-10-20"), perceivedMin = 50)
+
+        assertTrue(cumulativeSection(sessions)!!.gapTrendPct.isEmpty())
     }
 }

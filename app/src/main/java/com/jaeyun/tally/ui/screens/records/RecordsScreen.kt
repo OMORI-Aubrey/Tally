@@ -31,13 +31,16 @@ import com.jaeyun.tally.ui.components.notebook.NoteSectionTitle
 import com.jaeyun.tally.ui.components.notebook.NotebookPaper
 import com.jaeyun.tally.ui.components.records.AchievementBadge
 import com.jaeyun.tally.ui.components.records.ComparisonStat
+import com.jaeyun.tally.ui.components.records.CumulativeStat
 import com.jaeyun.tally.ui.components.records.DailyBarChart
 import com.jaeyun.tally.ui.components.records.FirstWeekGapNote
+import com.jaeyun.tally.ui.components.records.GapTrend
 import com.jaeyun.tally.ui.components.records.GoalCard
 import com.jaeyun.tally.ui.components.records.SessionListItem
 import com.jaeyun.tally.ui.components.records.TopAppsList
 import com.jaeyun.tally.ui.components.records.VerdictCard
 import com.jaeyun.tally.ui.components.records.WeekSelector
+import com.jaeyun.tally.ui.components.records.WeekSummary
 import com.jaeyun.tally.ui.components.records.perSessionCountText
 import com.jaeyun.tally.ui.components.text.sessionDurationText
 import com.jaeyun.tally.ui.components.text.totalDurationText
@@ -50,11 +53,12 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * 기록 탭 (§8.4, 와이어프레임 §5). 위에서부터 판정 섹션(늘 이번 주)과 이번 주 섹션(주 선택)이 스크롤로 이어진다.
- * 누적 섹션은 P7에서 붙는다. 판정과 목표는 이 화면에만 있다(와이어프레임 §0 원칙 4).
+ * 기록 탭 (§8.4, 와이어프레임 §5). 위에서부터 판정 섹션(늘 이번 주), 이번 주 섹션(주 선택), 누적 섹션(고른 주와 관계없음)이
+ * 스크롤로 이어진다. 판정과 목표는 이 화면에만 있다(와이어프레임 §0 원칙 4).
  *
  * 빈 상태(§8.5.1): 세션이 하나도 없으면 섹션 없이 안내 한 줄만 둔다. 기준선이 미활성이면 판정 섹션만 안내 문구로 바꾸고,
- * 보고 있는 주에 세션이 없으면 이번 주 섹션만 안내 문구로 바꾸되 주 선택 화살표는 남긴다.
+ * 보고 있는 주에 세션이 없으면 이번 주 섹션만 안내 문구로 바꾸되 주 선택 화살표는 남긴다. 누적 섹션은 통계 세션이
+ * 15개 미만이면 안내 없이 감춘다.
  *
  * @param onOpenSession 세션 목록 한 줄을 눌렀다. 그 세션의 리포트를 연다
  */
@@ -129,24 +133,80 @@ private fun RecordsContent(
                     modifier = Modifier.padding(top = 32.dp),
                 )
             }
-            return@LazyColumn
-        }
-        week.firstWeekGap?.let { gap ->
-            item(key = "first-week-gap") {
-                FirstWeekGapNote(gap.selfReportedDailyMin, gap.dailyFocusSec, Modifier.padding(top = 16.dp))
-            }
-        }
-        week.numbers?.let { numbers -> item(key = "week-numbers") { WeekNumbersContent(numbers) } }
-        if (week.topApps.isNotEmpty()) {
-            item(key = "top-apps") {
-                Column(Modifier.padding(top = 32.dp)) {
-                    NoteSectionTitle(stringResource(R.string.top_apps_title))
-                    TopAppsList(week.topApps, Modifier.padding(top = 4.dp))
+        } else {
+            week.firstWeekGap?.let { gap ->
+                item(key = "first-week-gap") {
+                    FirstWeekGapNote(gap.selfReportedDailyMin, gap.dailyFocusSec, Modifier.padding(top = 16.dp))
                 }
             }
+            week.numbers?.let { numbers -> item(key = "week-numbers") { WeekNumbersContent(numbers) } }
+            if (week.topApps.isNotEmpty()) {
+                item(key = "top-apps") {
+                    Column(Modifier.padding(top = 32.dp)) {
+                        NoteSectionTitle(stringResource(R.string.top_apps_title))
+                        TopAppsList(week.topApps, Modifier.padding(top = 4.dp))
+                    }
+                }
+            }
+            if (week.summary.isNotEmpty()) {
+                item(key = "summary") {
+                    Column(Modifier.padding(top = 32.dp)) {
+                        NoteSectionTitle(stringResource(R.string.summary_title))
+                        WeekSummary(week.summary, Modifier.padding(top = 8.dp))
+                    }
+                }
+            }
+            sessionList(week.days, state.today, onOpenSession)
         }
-        sessionList(week.days, state.today, onOpenSession)
+
+        state.cumulative?.let { cumulative -> item(key = "cumulative") { CumulativeSectionContent(cumulative) } }
     }
+}
+
+/**
+ * 누적 섹션: 이번 달·전체 순공 → 최고·최저 집중 시간대 → 최장 기록 → 인식 격차 추이(§8.4 (3) 표 순서).
+ * 0이거나 조건이 안 되는 줄은 감춘다(§8.5.1)
+ */
+@Composable
+private fun CumulativeSectionContent(section: CumulativeSection) {
+    Column(Modifier.padding(top = 40.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        NoteSectionTitle(stringResource(R.string.cumulative_title))
+        if (section.thisMonthFocusSec > 0) {
+            CumulativeStat(
+                label = stringResource(R.string.cumulative_month),
+                value = stringResource(R.string.focus_max, totalDurationText(section.thisMonthFocusSec.toLong())),
+                note = section.lastMonthFocusSec?.let { stringResource(R.string.cumulative_last_month, totalDurationText(it.toLong())) },
+            )
+        }
+        if (section.totalFocusSec > 0) {
+            CumulativeStat(
+                label = stringResource(R.string.cumulative_total),
+                value = stringResource(R.string.focus_max, totalDurationText(section.totalFocusSec.toLong())),
+            )
+        }
+        section.focusHours?.let { hours ->
+            HourBandStat(stringResource(R.string.cumulative_best_hours), hours.best)
+            HourBandStat(stringResource(R.string.cumulative_worst_hours), hours.worst)
+        }
+        section.longest?.let { longest ->
+            CumulativeStat(
+                label = stringResource(R.string.cumulative_longest),
+                value = sessionDurationText(longest.lfsSec.toLong()),
+                note = stringResource(R.string.cumulative_date, longest.date.monthValue, longest.date.dayOfMonth),
+            )
+        }
+        if (section.gapTrendPct.isNotEmpty()) GapTrend(section.gapTrendPct)
+    }
+}
+
+/** `최고 집중 시간대  14~16시 91%  (12세션)`. 표본 수를 함께 쓴다(§5.7) */
+@Composable
+private fun HourBandStat(label: String, band: HourBand) {
+    CumulativeStat(
+        label = label,
+        value = stringResource(R.string.cumulative_hours_value, band.startHour, band.startHour + HOUR_BAND_HOURS, band.densityPct),
+        note = stringResource(R.string.cumulative_sessions, band.sessionCount),
+    )
 }
 
 /** 판정 섹션: 달성 배지 → 판정 → 이번 주 목표. 기준선이 미활성이면 안내 한 줄로 바꾼다 */
