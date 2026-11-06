@@ -9,7 +9,7 @@
 | 캐시 폴더 | `cache/exports/` | debug 빌드의 CSV 내보내기 파일. 내보낼 때마다 이전 파일을 지운다 | [`AppDataRepository`](../../app/src/main/java/com/jaeyun/tally/data/repository/AppDataRepository.kt) |
 
 - 모든 시각은 epoch millis(UTC)로 저장하고, 화면에 보일 때 기기 시간대(`ZoneId.systemDefault()`)로 바꾼다.
-- 기준선·판정 결과는 저장하지 않는다(P6에서 조회할 때 계산한다). 세션 지표는 조회 성능을 위해 세션에 함께 저장한다(비정규화).
+- 기준선·판정·누적 지표·요약 문단은 저장하지 않고 기록 탭을 그릴 때 끝난 세션으로 계산한다. 주간 목표만 제시 당시 값을 `WeeklyGoal`에 저장한다. 세션 지표는 조회 성능을 위해 세션에 함께 저장한다(비정규화).
 - `Room`·`DataStore` 인스턴스는 [`AppContainer`](../../app/src/main/java/com/jaeyun/tally/AppContainer.kt)에서만 `by lazy`로 하나씩 만든다.
 
 ## Room 엔티티 4종
@@ -38,7 +38,7 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 | `hasTimeline` | INTEGER(Boolean) | false | 사용 기록으로 타임라인을 복원했는지. false면 착석 외 지표가 없다 |
 | `createdAt` | INTEGER | — | 행을 만든 시각(시작 시각과 같다) |
 
-`countsInStats = isValidForStats && hasTimeline` 확장 속성이 "통계에 셀 세션"이다. 주간 요약 줄, 체감 질문 후보, 리포트의 `기록`이 이 기준을 쓴다.
+`countsInStats = isValidForStats && hasTimeline` 확장 속성이 "통계에 셀 세션"이다. 주간 요약 줄, 체감 질문 후보, 리포트의 `기록`, 기준선·판정·목표, 기록 탭의 숫자·누적·요약 문단이 이 기준을 쓴다. 도메인 함수에는 `toSessionStats()`로 필요한 값만 옮겨 넘긴다(`SessionStats` — 도메인은 Room 엔티티를 모른다).
 
 **세션 행이 바뀌는 때** — 모두 [`SessionRepository`](../../app/src/main/java/com/jaeyun/tally/data/repository/SessionRepository.kt)가 한다(과목 이름은 `SubjectRepository`, 체감은 `PerceivedFocusRepository`).
 
@@ -86,7 +86,7 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 - 본 앱(Tally)은 저장하지 않는다. 언제나 허용이다.
 - 규칙은 [06-classification](06-classification.md).
 
-### `WeeklyGoal` — 주간 목표 (P6에서 사용)
+### `WeeklyGoal` — 주간 목표
 
 [`WeeklyGoal.kt`](../../app/src/main/java/com/jaeyun/tally/data/room/WeeklyGoal.kt)
 
@@ -98,7 +98,15 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 | `baselineValue` | 제시 당시의 기준선 값 |
 | `achievedValue`, `isAchieved` | 주가 끝난 뒤 채운다. null 가능 |
 
-엔티티와 DAO(`upsert`, `getByWeek`)만 있고 **아직 쓰는 코드가 없다.** 목표 생성은 P6 #27이다.
+`LFS`·`FOCUS_TOTAL` 목표값은 분, `INTERRUPTION`은 세션당 회(소수)다. 판정이 나온 뒤에 규칙이 바뀌어도 과거 목표가 바뀌지 않도록 제시 당시 값을 그대로 둔다.
+
+**생성과 달성 판정** — 서버·백그라운드 작업이 없어서, 기록 탭이 보일 때마다(앱으로 돌아올 때 포함) [`WeeklyGoalRepository.refresh`](../../app/src/main/java/com/jaeyun/tally/data/repository/WeeklyGoalRepository.kt)가 주 경계를 한 트랜잭션으로 처리한다.
+
+1. **지난 목표 판정** — 이번 주보다 앞선 주의 목표 중 `isAchieved`가 아직 null인 것(지난주, 기록 탭을 열지 않아 밀린 주)을 오래된 순서로 꺼내 그 주 통계 세션 값으로 채운다(`judged`). 그 주에 통계 세션이 없었으면 `achievedValue = null`, `isAchieved = false`.
+2. **이번 주 목표 생성** — 이번 주 행이 없으면 끝난 **지난주** 값과 지난주를 뺀 직전 4주 기준선으로 `GoalSuggester.suggest`를 불러 만든다(`weeklyGoalFor`). 지난주 통계 세션이 없거나 기준선이 미활성이면 만들지 않는다. `insertIfAbsent`(충돌 무시)라 같은 주에 두 번 만들거나 덮어쓰지 않는다.
+3. **결과** — 이번 주 목표와, 지난주 목표를 **달성했을 때만** 그 목표(배지)를 돌려준다(`achievedBadge`). 미달성은 화면에 아무것도 보이지 않는다.
+
+달성 기준은 [05-metrics](05-metrics.md#목표-달성)에 있다. 목표의 화살표 왼쪽 값(목표를 정할 때 본 값)은 저장하지 않고, 기록 탭이 그 주 세션으로 다시 계산한다(구할 수 없으면 목표값만 보인다).
 
 ## DAO
 
@@ -106,8 +114,8 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 |---|---|---|
 | [`StudySessionDao`](../../app/src/main/java/com/jaeyun/tally/data/room/StudySessionDao.kt) | `insert`, `update`, `delete`, `getById` | 세션 시작·종료·답 저장·삭제 |
 | | `getUnfinished` / `observeUnfinished` | `endAt IS NULL`인 가장 최근 세션. 타이머가 IDLE/RUNNING을 이것으로 정한다 |
-| | `observeFinished` | 끝난 세션 전체, 최근 시작 순. 기록 탭 목록, 주간 요약 줄 |
-| | `getFinishedStartedBetween` | 기간 안에 시작해 끝난 세션, 시작 순. 체감 질문 트리거 |
+| | `observeFinished` | 끝난 세션 전체, 최근 시작 순. 기록 탭 전체(판정·이번 주·누적 섹션, 세션 목록), 주간 요약 줄 |
+| | `getFinishedStartedBetween` | 기간 안에 시작해 끝난 세션, 시작 순. 체감 질문 트리거, 목표 생성(지난주를 뺀 직전 4주 + 지난주)·달성 판정(그 주) |
 | | `getBestLfsExcept` | 그 세션을 뺀 통계 세션(`isValidForStats = 1 AND hasTimeline = 1`)의 최장 구간 최댓값. 리포트의 `기록` |
 | | `setPerceivedFocus` | 체감 입력 |
 | | `observeSubjectStats` | 과목별 세션 수와 마지막 시작 시각(`GROUP BY subjectName`) |
@@ -116,12 +124,16 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 | | `getFinished`, `hasAny`, `observeHasAny` | CSV 내보내기, 데모 데이터 조건(세션이 하나라도 있는지, 진행 중 포함) |
 | | `getLatestFinished` | debug 프로브만 |
 | [`AppSegmentDao`](../../app/src/main/java/com/jaeyun/tally/data/room/AppSegmentDao.kt) | `insertAll`, `getBySession`(시각순), `deleteBySession` | 종료·자리 비움·재분류·리포트 |
+| | `getBySessions` | 여러 세션의 구간(`IN`). 기록 탭이 고른 주 통계 세션의 공부 중 켠 앱·요약 문단에 쓴다(`SessionRepository.loadAppUsage`, 앱 이름은 `getByPackages`) |
 | [`AppClassificationDao`](../../app/src/main/java/com/jaeyun/tally/data/room/AppClassificationDao.kt) | `insertIfAbsent`(충돌 무시) | 데모 데이터(사용자 분류를 덮지 않게) |
 | | `upsert`, `get` | 사용자 분류 저장(앱 분류 화면, 리포트 안 재분류) |
-| | `upsertAll`, `getByPackages` | 세션 종료 때 자동 분류 갱신, 리포트의 앱 이름 |
+| | `upsertAll`, `getByPackages` | 세션 종료 때 자동 분류 갱신, 리포트·기록 탭의 앱 이름 |
 | | `observeAll` | 앱 분류 화면(정렬은 화면이 한국어 순서로) |
 | | `getAll` | 계측 테스트만 |
-| [`WeeklyGoalDao`](../../app/src/main/java/com/jaeyun/tally/data/room/WeeklyGoalDao.kt) | `upsert`, `getByWeek` | 아직 없음(P6) |
+| [`WeeklyGoalDao`](../../app/src/main/java/com/jaeyun/tally/data/room/WeeklyGoalDao.kt) | `insertIfAbsent`(충돌 무시) | 이번 주 목표 생성. 이미 있으면 그대로 둔다 |
+| | `upsert` | 지난 목표에 달성 여부를 채운다 |
+| | `getByWeek` | 이번 주 목표, 지난주 목표(배지) |
+| | `getUnjudgedBefore` | 이번 주보다 앞선 주 중 `isAchieved IS NULL`인 목표, 오래된 순 |
 
 ## 스키마와 마이그레이션
 
@@ -136,10 +148,10 @@ enum은 Room 기본 지원으로 상수 **이름**(TEXT)이 저장된다(`TypeCo
 | 키 | 타입 · 기본값 | 쓰는 곳 → 읽는 곳 | 뜻 |
 |---|---|---|---|
 | `onboardingDone` | Boolean · false | 온보딩 완료 → 앱 시작 목적지 | false면 온보딩부터 연다. 앱을 열 때 한 번만 읽는다 |
-| `selfReportedDailyMin` | Int · 없음 | 온보딩 슬라이더(시간 × 60) → (P6 #28 1주차 격차) | 건너뛰면 지운다. 지금은 저장만 하고 읽는 화면이 없다(debug 프로브만 보여 준다) |
+| `selfReportedDailyMin` | Int · 없음 | 온보딩 슬라이더(시간 × 60) → 기록 탭 1주차 격차(`RecordsViewModel`) | 건너뛰면 지운다. 판정·목표·집계에는 쓰지 않는다(§5.8). debug 프로브도 보여 준다 |
 | `hiddenSubjects` | Set&lt;String&gt; · 빈 집합 | 과목 시트 `칩에서 숨기기` → 칩 목록 | 칩에서만 뺀다. 세션은 그대로 |
 | `addedSubjects` | Set&lt;String&gt; · 빈 집합 | 과목 시트 `+ 추가` → 칩·시트 | `"추가시각\t과목 이름"` 문자열로 저장. 아직 세션에 쓰지 않은 과목도 칩에 남게 한다 |
-| `relaxedBaseline` | Boolean · false | 설정 탭 개발자 영역 → (P6 #24 기준선) | 기준선 활성 조건 12 → 6세션. 지금은 값만 저장한다 |
+| `relaxedBaseline` | Boolean · false | 설정 탭 개발자 영역 → 기준선 활성 조건(`BaselineCalculator.requiredSessions`) — 기록 탭 판정(`RecordsViewModel`)과 목표 생성(`WeeklyGoalRepository`) | 기준선 활성 조건 12 → 6세션. debug 빌드에서만 효과가 있다. 누적 섹션(15세션)에는 적용하지 않는다 |
 | `perceivedAskedAt` | Long · 없음 | 체감 질문을 띄우기 직전 → 체감 질문 트리거 | 마지막으로 물은 세션의 **시작 시각**. 그 세션이 속한 주에는 다시 묻지 않는다 |
 | `recoveryAnsweredAt` | Long · 없음 | ③ `[이어서 기록]` → 재부팅 복구 질문 | 같은 재부팅을 두 번 묻지 않도록 답한 시각을 둔다 |
 | `quickScreenOffCheck` | Boolean · false | debug 프로브 스위치 → `AppContainer` | **임시(#21).** debug 빌드에서 ① 화면 꺼짐 질문 기준을 60분에서 1분으로 낮춘다 |

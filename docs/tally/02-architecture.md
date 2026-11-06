@@ -20,15 +20,19 @@ com.jaeyun.tally
 │   └── screens/         화면마다 Screen + ViewModel
 │       └── onboarding/  timer/  perceived/  report/  records/  settings/  appclass/
 ├── domain/              Android 의존성 없는 순수 Kotlin
-│   ├── model/           Category, Segment, RawEvent, SessionMetrics, SubjectName, GoalMetric
+│   ├── model/           Category, Segment, RawEvent, SessionMetrics, SubjectName, GoalMetric,
+│   │                    SessionStats, WeekStats, Baseline, Verdict, Goal, WeeklyReport
 │   ├── reconstructor/   TimelineReconstructor, LongScreenOff
 │   ├── metrics/         MetricsCalculator, SessionValidity, MetricsVersion
-│   └── baseline/  verdict/  goal/  report/     빈 폴더(.gitkeep) — P6·P7
+│   ├── baseline/        BaselineCalculator
+│   ├── verdict/         VerdictResolver
+│   ├── goal/            GoalSuggester
+│   └── report/          ReportGenerator, TemplateReportGenerator
 ├── data/
 │   ├── room/            엔티티 4종, DAO 4개, TallyDatabase
 │   ├── datastore/       AppSettingsStore
 │   ├── usagestats/      UsageEventSource, AppClassifier, StudyApps
-│   └── repository/      Session·Subject·PerceivedFocus·AppClassification·AppData Repository, 순수 함수 파일
+│   └── repository/      Session·Subject·PerceivedFocus·AppClassification·AppData·WeeklyGoal Repository, 순수 함수 파일
 └── util/                WeekRange, Duration, ElapsedClock, Josa
 ```
 
@@ -50,14 +54,14 @@ debug 빌드에만 있는 사용 기록 프로브는 `app/src/debug/.../probe`�
 
 | 쪽 | 쓰는 것 |
 |---|---|
-| `ui` | `data/repository`(Repository와 결과 타입), `data/room`(엔티티 타입·`countsInStats` — 5개 파일), `data/datastore`(`AppSettingsStore` — `TallyAppViewModel`, `OnboardingViewModel`, `SettingsViewModel`), `domain`, `util` |
-| `data` | `domain`(모델, 복원, 지표), `util`(`DemoData`의 주 범위) |
+| `ui` | `data/repository`(Repository와 결과 타입), `data/room`(엔티티 타입·`countsInStats`·`toSessionStats` — 6개 파일), `data/datastore`(`AppSettingsStore` — `TallyAppViewModel`, `OnboardingViewModel`, `SettingsViewModel`, `RecordsViewModel`), `domain`, `util` |
+| `data` | `domain`(모델, 복원, 지표, 기준선, 목표), `util`(`DemoData`·`WeeklyGoalRepository`의 주 범위) |
 | `domain` | 아무것도. `android.*`·`androidx.*`를 import하지 않는다 — [`DomainPurityTest`](../../app/src/test/java/com/jaeyun/tally/domain/DomainPurityTest.kt)가 지킨다 |
 | `util` | 아무것도 |
 
 - `data`·`domain`·`util`은 `ui`를 import하지 않는다.
 - **UseCase 계층이 없다.** 알고리즘만 `domain`의 순수 함수로 두고, 나머지는 ViewModel이 Repository를 직접 부른다.
-- 기획서의 도메인 함수 6개 중 지금 있는 것은 `TimelineReconstructor`·`MetricsCalculator` 2개다. `BaselineCalculator`·`VerdictResolver`·`GoalSuggester`(P6)와 `TemplateReportGenerator`(P7)는 아직 없다.
+- 기획서의 도메인 함수 6개가 모두 있다: `TimelineReconstructor`·`MetricsCalculator`(P0·P2), `BaselineCalculator`·`VerdictResolver`·`GoalSuggester`(P6), `TemplateReportGenerator`(P7). 기준선·판정은 저장하지 않고 볼 때마다 계산한다. 목표만 `WeeklyGoal`로 제시 당시 값을 저장한다.
 
 ### 순수 함수로 뺀 규칙
 
@@ -66,8 +70,10 @@ debug 빌드에만 있는 사용 기록 프로브는 `app/src/debug/.../probe`�
 | 파일 | 함수 |
 |---|---|
 | `domain/…` | `TimelineReconstructor.reconstruct`·`checkInvariant`, `longScreenOffSegments`, `markAway`, `MetricsCalculator.calculate`·`perceptionGapPct`, `SessionValidity` |
+| `domain/…` (P6·P7) | `BaselineCalculator.calculate`·`requiredSessions`·`windowStartAt`, `VerdictResolver.resolve`, `GoalSuggester.suggest`·`valueOf`·`isAchieved`, `WeekStats.of`, `TemplateReportGenerator.generate`(`suspend`) |
 | `data/repository/SessionCompletion.kt` | `completeSession`(종료 때 저장할 값), `sameTimeline`(재분류 전 비교) |
 | `data/repository/SubjectRepository.kt` | `mergeSubjects`, `recentVisible`, `forSheet` |
+| `data/repository/WeeklyGoals.kt` | `WeeklyGoal.judged`(달성 판정), `weeklyGoalFor`(이번 주 목표), `achievedBadge` |
 | `data/repository/DemoData.kt`, `SessionCsv.kt` | `demoData`, `sessionsCsv`, `csvField` |
 | `data/usagestats/AppClassifier.kt` | `autoCategory` |
 | `ui/screens/timer/TimerViewModel.kt` | `subjectChips`, `weeklySummary`, `shouldAskPerceived`, `asksRecovery` |
@@ -75,6 +81,7 @@ debug 빌드에만 있는 사용 기록 프로브는 `app/src/debug/.../probe`�
 | `ui/screens/perceived/PerceivedInputViewModel.kt` | `parsePerceivedMinutes`, `maxPerceivedMinutes`, `hasHourBlank`, `hourFitsSession` |
 | `ui/screens/onboarding/OnboardingViewModel.kt` | `permissionStep`, `finishesOnReturn`, `selfReportedDailyMin` |
 | `ui/screens/records/RecordsViewModel.kt` | `groupByDay` |
+| `ui/screens/records/RecordsSections.kt` | `selectedWeek`, `buildVerdictSection`, `buildWeekSection`, `buildCumulativeSection`, `weeklyReportInput`, `distractApps`, `topApps`, `trend`·`shownSeconds`·`tenths`(비교 화살표) |
 | `ui/screens/appclass/AppClassificationViewModel.kt` | `appRows` |
 | `util/` | `weekRangeOf`, `durationParts`, `formatElapsedClock`, `Josa` |
 
@@ -93,10 +100,11 @@ debug 빌드에만 있는 사용 기록 프로브는 `app/src/debug/.../probe`�
 | `perceivedFocusRepository` | `PerceivedFocusRepository` | |
 | `appClassificationRepository` | `AppClassificationRepository` | |
 | `appDataRepository` | `AppDataRepository` | 전체 삭제·CSV·데모. CSV 폴더는 `cache/exports` |
+| `weeklyGoalRepository` | `WeeklyGoalRepository` | 지난 목표 달성 판정·이번 주 목표 생성. debug 빌드면 기준선 완화 플래그가 효과를 낸다 |
 
-**debug 판별이 두 가지다.** `AppContainer`는 앱의 `FLAG_DEBUGGABLE`로 판별하고(`strictInvariant`, `quickScreenOffCheck`), 설정 탭의 개발자 영역은 `BuildConfig.DEBUG`로 가린다(#23에서 `buildConfig = true`를 켰다). 둘 다 debug 빌드에서 참이다.
+**debug 판별이 두 가지다.** `AppContainer`는 앱의 `FLAG_DEBUGGABLE`로 판별하고(`debuggable` — `strictInvariant`, `quickScreenOffCheck`, 기준선 완화를 쓰는 `WeeklyGoalRepository`·`RecordsViewModel`), 설정 탭의 개발자 영역은 `BuildConfig.DEBUG`로 가린다(#23에서 `buildConfig = true`를 켰다). 둘 다 debug 빌드에서 참이다.
 
-**ViewModel 만들기** — `viewModelFactory { initializer { … } }`에서 `CreationExtras.appContainer`(Application에서 꺼낸다)로 필요한 것만 넘긴다. 세션을 다루는 화면(체감 입력, 리포트)은 `factory(sessionId)`로 id를 함께 넘긴다.
+**ViewModel 만들기** — `viewModelFactory { initializer { … } }`에서 `CreationExtras.appContainer`(Application에서 꺼낸다)로 필요한 것만 넘긴다. 세션을 다루는 화면(체감 입력, 리포트)은 `factory(sessionId)`로 id를 함께 넘긴다. 도메인 함수는 컨테이너에 등록하지 않는다 — 요약 문단 생성기도 `RecordsViewModel.Factory`가 `TemplateReportGenerator()`를 직접 넘긴다(LLM 구현체를 붙이면 여기서 바꾼다).
 
 ## ViewModel과 상태
 
@@ -107,13 +115,15 @@ debug 빌드에만 있는 사용 기록 프로브는 `app/src/debug/.../probe`�
 | 타이머 | `TimerViewModel` | `Loading` / `Idle`(칩·선택·시트 목록·주간 요약) / `Running`, 지금 띄울 다이얼로그 | `finishedSessions` → 체감 입력 또는 리포트로 |
 | 체감 입력 | `PerceivedInputViewModel` | 최대 분 | `done` → 리포트로 |
 | 세션 리포트 | `SessionReportViewModel` | 리포트 내용, 재분류 결과 한 줄, 지금 권한 | — |
-| 기록 탭 | `RecordsViewModel` | 날짜별 세션 목록, 오늘 날짜 | — |
+| 기록 탭 | `RecordsViewModel` | `Loading` / `Empty` / `Content`(판정 섹션, 고른 주의 이번 주 섹션, 누적 섹션, 오늘 날짜). 고른 주, 갱신한 목표 | — |
 | 설정 탭 | `SettingsViewModel` | 권한, 기준선 완화, 세션 유무, 데모 주입 여부 | `ShareCsv` → 공유 시트, `DataDeleted` → 온보딩으로 |
 | 앱 분류 | `AppClassificationViewModel` | 정렬한 앱 목록 | — |
 
 - 상태는 `StateFlow`(`stateIn(..., SharingStarted.WhileSubscribed(5_000), …)`)로 내보내고 화면은 `collectAsStateWithLifecycle()`로 읽는다.
 - 한 번만 처리할 일(이동, 공유)은 `Channel` → `receiveAsFlow()`로 내보내고, 화면이 `repeatOnLifecycle(STARTED)` 안에서 받는다.
 - 사용 기록 권한은 결과 콜백이 없어서, 권한을 보여 주는 화면(온보딩, 리포트, 설정)은 `LifecycleResumeEffect`로 화면이 보일 때마다 다시 확인한다.
+- 기록 탭도 `LifecycleResumeEffect`로 화면이 보일 때마다(앱으로 돌아올 때 포함) `refreshGoals()`를 불러 주 경계를 처리한다 — 서버·백그라운드 작업이 없기 때문이다([03-data](03-data.md#weeklygoal--주간-목표)).
+- 기록 탭 상태는 끝난 세션 목록, 고른 주, 갱신한 목표, 설정(`selfReportedDailyMin`·`relaxedBaseline`)을 `combine`해 만든다. 세션이 끝나거나 리포트에서 다시 계산되면 다시 그린다. 고른 주가 바뀌면 그 주 통계 세션의 구간을 다시 읽는다(공부 중 켠 앱·요약 문단).
 - 다이얼로그 답은 `CompletableDeferred`로 기다리고 `Mutex`로 한 번에 하나만 띄운다(`TimerViewModel.ask`).
 
 ## 내비게이션
@@ -134,7 +144,7 @@ Navigation Compose의 type-safe 라우트(`@Serializable` 객체·클래스, [`R
 
 ## 스레드
 
-- DAO는 모두 `suspend` 또는 `Flow`다. 여러 테이블을 바꾸는 일은 `withTransaction`으로 묶는다.
+- DAO는 모두 `suspend` 또는 `Flow`다. 여러 테이블을 바꾸는 일은 `withTransaction`으로 묶는다. 목표 갱신(지난 목표 판정 + 이번 주 목표 생성)도 한 트랜잭션이다.
 - 사용 기록 조회와 `PackageManager` 조회(자동 분류)는 블로킹이라 `Dispatchers.IO`에서 부르고, 트랜잭션 밖에서 한다. 저장 직전에 세션이 아직 진행 중인지 다시 확인한다.
 - `clearAllTables`(전체 삭제)와 CSV 파일 쓰기도 IO 디스패처에서 한다.
 - 연타는 ViewModel과 Repository에서 막는다. 종료를 두 번 눌러도 이미 끝난 세션이면 아무것도 하지 않고, 다이얼로그는 처음 답만 쓰며, 체감 입력·리포트 재분류·설정의 삭제·내보내기·데모 주입은 처리 중 플래그로 한 번만 한다.
