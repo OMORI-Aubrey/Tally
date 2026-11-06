@@ -8,7 +8,7 @@
 
 | 항목 | 버전 |
 |---|---|
-| Android Gradle Plugin | 9.4.1 — **built-in Kotlin**(`org.jetbrains.kotlin.android`·`kotlin-kapt` 플러그인을 쓰지 않는다) |
+| Android Gradle Plugin | 9.5.1 — **built-in Kotlin**(`org.jetbrains.kotlin.android`·`kotlin-kapt` 플러그인을 쓰지 않는다) |
 | Gradle | 9.6.0 (daemon JVM toolchain 21) |
 | Kotlin 플러그인(compose, serialization) | 2.4.20 |
 | KSP | 2.3.12 — 어노테이션 처리는 KSP만(Room) |
@@ -48,11 +48,11 @@
 
 | 종류 | 위치 | 개수 | 내용 |
 |---|---|---|---|
-| JVM 단위 테스트 | `app/src/test` | 167 | 아래 표 |
+| JVM 단위 테스트 | `app/src/test` | 278 | 아래 표 |
 | debug 전용 JVM 테스트 | `app/src/testDebug` | 9 | 프로브의 화면 켜짐 분석(`ScreenOnAnalyzerTest`) |
-| 계측 테스트 | `app/src/androidTest` | 38 | Room DB·DAO, Session·Subject·AppClassification·AppData Repository |
+| 계측 테스트 | `app/src/androidTest` | 44 | Room DB·DAO, Session·Subject·AppClassification·AppData·WeeklyGoal Repository |
 
-`./gradlew testDebugUnitTest`가 `test`와 `testDebug`를 함께 돌린다(176개).
+`./gradlew testDebugUnitTest`가 `test`와 `testDebug`를 함께 돌린다(287개).
 
 **JVM 단위 테스트 내용**
 
@@ -67,9 +67,14 @@
 | 체감 질문 | `PerceivedTriggerTest`(7), `PerceivedMinutesTest`(10) |
 | 리포트 | `SessionReportTest`(13) |
 | 타이머 | `WeeklySummaryTest`(7), `RecoveryTest`(4) |
-| 온보딩·기록·앱 분류 | `OnboardingStepTest`(5), `GroupByDayTest`(3), `AppRowsTest`(4), `SketchSliderTest`(3) |
+| 기준선 | `BaselineCalculatorTest`(14) — 4주 경계(일광 절약 시간 포함), 통계 제외·타임라인 없는 세션, 12/6세션 활성 조건, `WeekStatsTest`(3) |
+| 판정 | `VerdictResolverTest`(15) — 5구간과 경계값(±3%, ±10%), 기준선 밀도 0, 총량 가드 0.7 경계와 `clamped` |
+| 목표 | `GoalSuggesterTest`(21) — 1~4순위, 경계값(120%, 90%, ±20%), 4순위 동률 순서, 세션 길이 가드, 기준선 이탈 0, 최고 기록을 목표로 쓰지 않음. `WeeklyGoalsTest`(11) — 목표 생성 조건, 달성 판정(이하·이상, 세션 없는 주), 배지 |
+| 요약 문단 | `TemplateReportGeneratorTest`(6) — 문장 순서, 첫 주, 화면 자릿수 비교, 같은 기록, 앱 동률, 이탈 문장을 빼는 경우 |
+| 기록 탭 | `RecordsSectionsTest`(38) — 보고 있는 주, 판정 섹션(미활성·총량 가드·판정 대기·완화 조건·목표와 배지의 왼쪽 값·주가 바뀐 뒤의 목표), 이번 주 숫자와 비교값(보이는 자릿수), 주 이동, 1주차 격차, 공부 중 켠 앱, 요약 사실, 누적 섹션(15세션, 달 경계, 시간대, 자정 넘김, 최장 기록, 격차 추이). `GroupByDayTest`(3), `DecimalTextTest`(2) |
+| 온보딩·앱 분류 | `OnboardingStepTest`(5), `AppRowsTest`(4), `SketchSliderTest`(3) |
 | 개발자 영역 | `DemoDataTest`(10), `SessionCsvTest`(4) |
-| 공통 | `DurationTest`(4), `ElapsedClockTest`(3), `JosaTest`(4), `WeekRangeTest`(6), `DomainPurityTest`(1) |
+| 공통 | `DurationTest`(4), `ElapsedClockTest`(3), `JosaTest`(5), `WeekRangeTest`(6), `DomainPurityTest`(1) |
 
 (나머지 1개는 템플릿 `ExampleUnitTest`.)
 
@@ -110,16 +115,16 @@
 
 - **세션이 하나도 없을 때만**(진행 중 세션 포함) 넣는다. 실측 기록과 섞이지 않게 하려는 것이다(PLAN.md §4). 지우는 방법은 데이터 전체 삭제뿐이다.
 - 이번 주와 앞 4주, 계획된 세션 21개 중 **지금보다 앞서 끝난 것만** 넣는다(이번 주의 뒤 요일 세션은 빠진다). 같은 시각이면 늘 같은 데이터가 나온다.
-- 앞 4주에 통계 세션 16개(기준선 12세션·누적 15세션 조건을 앞 4주만으로 채운다) + 3주 전에 2분짜리 오조작 세션 하나(통계 제외).
+- 앞 4주에 통계 세션 16개(기준선 12세션·누적 15세션 조건을 앞 4주만으로 채운다) + 3주 전에 2분짜리 오조작 세션 하나(통계 제외). 그래서 넣자마자 기록 탭에 판정, 이번 주 목표(지난주 값으로 기록 탭에 들어올 때 만든다), 누적 섹션, 인식 격차 추이가 나온다.
 - 흐름: 평범한 두 주 → 밤 세션이 많고 이탈이 잦은 힘든 주 → 회복 → 이번 주 나아짐. 과목은 수학·영어·물리.
 - 구간은 `본 앱 20초 → (화면 꺼짐 ↔ 앱 사용) 반복 → 본 앱 30초`. 딴짓 앱은 카카오톡·YouTube·Instagram을 돌려 쓰고, 1시간 이상 세션에는 계산기(허용)를 한 번 넣는다. 복원 불변식을 지키고 지표는 실제 세션과 같은 `completeSession`으로 계산한다.
 - 체감은 앞 4주에 주마다 셋째 세션에 세션 길이의 95%로 적었다(힘든 주에 격차가 가장 크다).
 - 데모 앱 4개(YouTube·Instagram·카카오톡 딴짓, 계산기 허용)의 분류를 `AUTO_CATEGORY`로 넣는다. 이미 있는 행은 건드리지 않는다.
-- 주간 목표(`WeeklyGoal`)와 DataStore 값(자기보고, 체감 질문 기록)은 넣지 않는다.
+- 주간 목표(`WeeklyGoal`)와 DataStore 값(자기보고, 체감 질문 기록)은 넣지 않는다. 목표는 기록 탭에 들어올 때 보통 때와 같은 규칙으로 만들어진다. 지난 주의 목표는 없으므로 달성 배지는 나오지 않는다.
 
 ### 기준선 조건 완화
 
-DataStore `relaxedBaseline`을 켜고 끈다. 기준선 활성 조건 12세션 → 6세션(§5.3, 사용성 평가에서 테스터가 12세션을 못 채울 때). 지금은 값만 저장하고, 기준선 계산(P6 #24)이 읽는다. release 빌드에는 적용되지 않는다.
+DataStore `relaxedBaseline`을 켜고 끈다. 기준선 활성 조건 12세션 → 6세션(§5.3, 사용성 평가에서 테스터가 12세션을 못 채울 때). `BaselineCalculator.requiredSessions(relaxed, debugBuild)`로 기록 탭 판정(`RecordsViewModel`)과 목표 생성(`WeeklyGoalRepository`)에 적용된다. 누적 섹션(15세션)에는 적용하지 않는다. release 빌드에는 적용되지 않는다(`debuggable`이 false). 완화 조건에서 얻은 사용성 평가 결과에는 그 사실을 함께 적는다(§5.3).
 
 ## 작업 흐름
 
