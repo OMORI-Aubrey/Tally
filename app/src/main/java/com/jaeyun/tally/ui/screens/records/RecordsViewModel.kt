@@ -69,12 +69,20 @@ sealed interface RecordsUiState {
     /** 끝난 세션이 하나도 없다. 섹션 없이 안내 한 줄만 둔다 (§8.5.1) */
     data object Empty : RecordsUiState
 
-    /** [today]는 세션 목록의 날짜 머리말을 "오늘"·"어제"로 바꾸는 기준 */
-    data class Content(val verdict: VerdictSection, val week: WeekSection, val today: LocalDate) : RecordsUiState
+    /**
+     * @param cumulative 누적 섹션. 통계 세션이 15개 미만이면 null이고 섹션 전체를 감춘다
+     * @param today 세션 목록의 날짜 머리말을 "오늘"·"어제"로 바꾸는 기준
+     */
+    data class Content(
+        val verdict: VerdictSection,
+        val week: WeekSection,
+        val cumulative: CumulativeSection?,
+        val today: LocalDate,
+    ) : RecordsUiState
 }
 
 /**
- * 기록 탭 (§8.4): 판정 섹션(늘 이번 주)과 이번 주 섹션(주 선택). 누적 섹션은 P7에서 붙는다.
+ * 기록 탭 (§8.4): 판정 섹션(늘 이번 주), 이번 주 섹션(주 선택), 누적 섹션(고른 주와 관계없음).
  *
  * 세션이 끝나거나 리포트에서 다시 계산되면(재분류) 다시 그린다. 목표는 탭에 들어올 때 갱신한 값을 쓴다([refreshGoals]).
  *
@@ -121,6 +129,7 @@ class RecordsViewModel(
                     now = now,
                     zone = zoneId,
                 ),
+                cumulative = buildCumulativeSection(finished, now, zoneId),
                 today = Instant.ofEpochMilli(now).atZone(zoneId).toLocalDate(),
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecordsUiState.Loading)

@@ -275,6 +275,26 @@
     <string name="daily_focus_none">%1$s 기록 없음</string>
     <string name="top_apps_title">공부 중 켠 앱</string>
 
+    <!-- 누적 섹션 (§8.4 (3)). 통계 세션 15개 미만이면 안내 없이 감춘다 -->
+    <string name="cumulative_title">누적</string>
+    <string name="cumulative_month">이번 달 순공</string>
+    <string name="cumulative_total">전체 순공</string>
+    <!-- 이번 달 순공 최대 68h 12m (지난달 54h 30m) -->
+    <string name="cumulative_last_month">(지난달 %1$s)</string>
+    <string name="cumulative_best_hours">최고 집중 시간대</string>
+    <string name="cumulative_worst_hours">최저 집중 시간대</string>
+    <!-- 14~16시 91% -->
+    <string name="cumulative_hours_value">%1$d~%2$d시 %3$d%%</string>
+    <!-- 표본 수 (§5.7): (12세션) -->
+    <string name="cumulative_sessions">(%1$d세션)</string>
+    <string name="cumulative_longest">최장 기록</string>
+    <!-- 47분 (9월 4일) -->
+    <string name="cumulative_date">(%1$d월 %2$d일)</string>
+    <!-- 인식 격차 +38% → +31% → +24%. 화살표는 그림으로 그린다. 양수가 과대평가 (§5.2) -->
+    <string name="cumulative_gap">인식 격차</string>
+    <string name="cumulative_gap_over">+%1$d%%</string>
+    <string name="cumulative_gap_value">%1$d%%</string>
+
     <!-- 시간 표기 (PLAN.md §4). 세션 단위는 한글, 주간·누적 총량은 h m -->
     <string name="duration_seconds">%1$d초</string>
     <!-- 초 단위에서 버려 0초가 된 길이. 0을 보이지 않는다 (§8.5.1, PLAN.md §4) -->
