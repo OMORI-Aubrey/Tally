@@ -13,6 +13,8 @@ import com.jaeyun.tally.data.repository.WeeklyGoals
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.room.countsInStats
 import com.jaeyun.tally.domain.baseline.BaselineCalculator
+import com.jaeyun.tally.domain.report.ReportGenerator
+import com.jaeyun.tally.domain.report.TemplateReportGenerator
 import com.jaeyun.tally.util.weekRangeOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -86,11 +88,13 @@ sealed interface RecordsUiState {
  *
  * 세션이 끝나거나 리포트에서 다시 계산되면(재분류) 다시 그린다. 목표는 탭에 들어올 때 갱신한 값을 쓴다([refreshGoals]).
  *
+ * @param reportGenerator 이번 주 섹션의 요약 문단(§7.4, §7.5)
  * @param debugBuild debug 빌드인지. 설정의 기준선 완화 플래그는 debug 빌드에서만 효과가 있다 (§5.3)
  */
 class RecordsViewModel(
     private val sessions: SessionRepository,
     private val goals: WeeklyGoalRepository,
+    private val reportGenerator: ReportGenerator,
     settings: AppSettingsStore,
     private val debugBuild: Boolean,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
@@ -113,6 +117,9 @@ class RecordsViewModel(
             val zoneId = zone()
             val week = selectedWeek(finished, selected, now, zoneId)
             val usage = sessions.loadAppUsage(finished.startedIn(week).filter { it.countsInStats }.map { it.id })
+            val summary = weeklyReportInput(finished, week, distractApps(usage.segments, usage.appLabels), zoneId)
+                ?.let { reportGenerator.generate(it) }
+                .orEmpty()
             RecordsUiState.Content(
                 verdict = buildVerdictSection(
                     sessions = finished,
@@ -126,6 +133,7 @@ class RecordsViewModel(
                     week = week,
                     selfReportedDailyMin = prefs.selfReportedDailyMin,
                     topApps = topApps(usage.segments, usage.appLabels),
+                    summary = summary,
                     now = now,
                     zone = zoneId,
                 ),
@@ -164,6 +172,8 @@ class RecordsViewModel(
                 RecordsViewModel(
                     sessions = appContainer.sessionRepository,
                     goals = appContainer.weeklyGoalRepository,
+                    // MVP 유일 구현(§7.5). LLM 구현체를 붙이면 여기서 바꾼다
+                    reportGenerator = TemplateReportGenerator(),
                     settings = appContainer.settingsStore,
                     debugBuild = appContainer.debuggable,
                 )

@@ -5,9 +5,11 @@ import com.jaeyun.tally.data.room.AppSegment
 import com.jaeyun.tally.data.room.StudySession
 import com.jaeyun.tally.data.room.WeeklyGoal
 import com.jaeyun.tally.domain.model.Category
+import com.jaeyun.tally.domain.model.DistractApp
 import com.jaeyun.tally.domain.model.GoalMetric
 import com.jaeyun.tally.domain.model.PseudoPackage
 import com.jaeyun.tally.domain.model.Verdict
+import com.jaeyun.tally.domain.model.WeeklyReportInput
 import com.jaeyun.tally.ui.components.records.TopApp
 import com.jaeyun.tally.ui.components.records.Trend
 import com.jaeyun.tally.util.weekRangeOf
@@ -71,7 +73,7 @@ private fun weekSection(
     sessions: List<StudySession>,
     weekStart: Long = THIS_WEEK.startAt,
     selfReportedDailyMin: Int? = null,
-) = buildWeekSection(sessions, weekRangeOf(weekStart, SEOUL), selfReportedDailyMin, emptyList(), NOW, SEOUL)
+) = buildWeekSection(sessions, weekRangeOf(weekStart, SEOUL), selfReportedDailyMin, emptyList(), emptyList(), NOW, SEOUL)
 
 private fun segment(pkg: String, millis: Long, category: Category = Category.DISTRACT) =
     AppSegment(sessionId = 1, packageName = pkg, category = category, startAt = 0, endAt = millis)
@@ -347,6 +349,58 @@ class RecordsSectionsTest {
 
         assertEquals(MAX_TOP_APPS, apps.size)
         assertEquals(TopApp("g", 2, 60), apps.first())
+    }
+
+    // 요약 문단의 사실
+
+    @Test
+    fun `딴짓 앱은 다섯 개로 자르지 않고 모두 센다`() {
+        val segments = listOf("a", "b", "c", "d", "e", "f").map { segment(it, 60_000) } + segment(PseudoPackage.SCREEN_ON_UNKNOWN, 60_000)
+
+        assertEquals(6, distractApps(segments, emptyMap()).size)
+    }
+
+    @Test
+    fun `요약 사실은 그 주 통계 세션으로 내고 앞 주와 앞선 기록을 함께 담는다`() {
+        val apps = listOf(DistractApp("카카오톡", 2, 120))
+        val sessions = listOf(
+            session(at("2026-10-26"), totalMin = 60, focusMin = 45, lfsSec = 30 * 60, interruptions = 3),
+            session(at("2026-10-27"), totalMin = 90, focusMin = 80, lfsSec = 50 * 60, interruptions = 1),
+            session(at("2026-10-28"), totalMin = 2, focusMin = 2, valid = false), // 통계 제외
+            session(at("2026-10-20"), focusMin = 40, lfsSec = 40 * 60), // 지난주
+            session(at("2026-10-01"), lfsSec = 45 * 60), // 앞선 기록
+            session(at("2026-11-03"), lfsSec = 70 * 60), // 다음 주는 앞선 기록이 아니다
+        )
+
+        val input = weeklyReportInput(sessions, THIS_WEEK, apps, SEOUL)
+
+        assertEquals(
+            WeeklyReportInput(
+                sessionCount = 2,
+                sittingSec = 150 * 60,
+                focusSec = 125 * 60,
+                previousFocusSec = 40 * 60,
+                longestSec = 50 * 60,
+                previousBestLfsSec = 45 * 60,
+                interruptionCount = 4,
+                distractApps = apps,
+            ),
+            input,
+        )
+    }
+
+    @Test
+    fun `앞 주 세션과 앞선 기록이 없으면 비워 두고 그 주 통계 세션이 없으면 요약을 두지 않는다`() {
+        val firstWeek = listOf(session(at("2026-10-26")), session(at("2026-10-19"), valid = false))
+
+        val input = weeklyReportInput(firstWeek, THIS_WEEK, emptyList(), SEOUL)!!
+        assertNull(input.previousFocusSec)
+        assertNull(input.previousBestLfsSec)
+
+        // 앞선 기록이 0초뿐이면 견줄 기록이 없다
+        assertNull(weeklyReportInput(firstWeek + session(at("2026-10-19"), lfsSec = 0), THIS_WEEK, emptyList(), SEOUL)!!.previousBestLfsSec)
+
+        assertNull(weeklyReportInput(listOf(session(at("2026-10-26"), timeline = false)), THIS_WEEK, emptyList(), SEOUL))
     }
 
     // 누적 섹션
