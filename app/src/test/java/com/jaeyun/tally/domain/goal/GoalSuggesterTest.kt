@@ -179,12 +179,20 @@ class GoalSuggesterTest {
     // 기준선 0
 
     @Test
-    fun `기준선 이탈이 0이고 이번 주도 0이면 이탈 복귀 목표가 아니다`() {
+    fun `기준선 이탈이 0이면 4순위에서 이탈을 빼고 다음 지표를 고른다`() {
         val baseline = BASELINE.copy(interruptionsPerSession = 0f)
         val goal = GoalSuggester.suggest(NORMAL.copy(interruptionsPerSession = 0f), baseline)
 
-        // 이탈 0% · LFS 0% · 순공 0%로 같아 순서상 이탈이지만, 1순위(복귀)가 아니라 4순위다
-        assertEquals(Goal(INTERRUPTION, 0f, 0f, 0f), goal)
+        // 이탈 0% · LFS 0% · 순공 0%로 같아 순서상 이탈이지만, 목표가 0회 → 0회가 되므로 빼고 LFS를 고른다(#72)
+        assertEquals(Goal(LFS, 40f, 42f, 40f), goal)
+    }
+
+    @Test
+    fun `기준선 값이 모두 0이면 4순위 후보가 없어 목표가 없다`() {
+        val baseline = BASELINE.copy(interruptionsPerSession = 0f, lfsSec = 0, weeklyFocusSec = 0)
+        val week = NORMAL.copy(interruptionsPerSession = 0f, lfsSec = 0, focusSec = 0)
+
+        assertNull(GoalSuggester.suggest(week, baseline))
     }
 
     @Test

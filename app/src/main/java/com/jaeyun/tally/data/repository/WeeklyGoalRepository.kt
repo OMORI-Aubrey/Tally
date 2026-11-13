@@ -13,7 +13,7 @@ import java.time.ZoneId
 
 /** 기록 탭 판정 섹션이 보여 줄 목표 (§8.4) */
 data class WeeklyGoals(
-    /** 이번 주 목표. 기준선이 미활성이었거나 지난주에 통계 세션이 없었으면 null */
+    /** 이번 주 목표. 기준선이 미활성이었거나, 지난주에 통계 세션이 없었거나, 고를 지표가 없었으면 null */
     val current: WeeklyGoal?,
     /** 지난주 목표를 달성했으면 그 목표(배지). 미달성·목표 없음은 null */
     val achievedLastWeek: WeeklyGoal?,

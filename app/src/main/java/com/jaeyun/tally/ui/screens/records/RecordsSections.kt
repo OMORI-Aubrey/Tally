@@ -37,7 +37,7 @@ sealed interface VerdictSection {
     /**
      * @param badge 지난주 목표를 달성했을 때만. 미달성은 표시하지 않는다 (§7.3)
      * @param verdict 이번 주 판정. 이번 주에 통계 세션이 아직 없으면 null이고 판정 대신 안내 한 줄을 쓴다
-     * @param goal 이번 주 목표. 목표를 만들 때 기준선이 미활성이었거나 지난주 통계 세션이 없었으면 null (PLAN.md §4)
+     * @param goal 이번 주 목표. 목표를 만들 때 기준선이 미활성이었거나, 지난주 통계 세션이 없었거나, 고를 지표가 없었으면 null (PLAN.md §4)
      */
     data class Active(val badge: GoalBadge?, val verdict: VerdictLine?, val goal: GoalLine?) : VerdictSection
 }
