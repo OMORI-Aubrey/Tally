@@ -17,7 +17,7 @@ internal fun WeeklyGoal.judged(week: WeekStats?): WeeklyGoal {
 
 /**
  * 이번 주([thisWeekStartAt]) 목표. 끝난 지난주 값([lastWeek])을 지난주를 뺀 직전 4주 기준선([baseline])과 비교한다(PLAN.md §4).
- * 지난주에 통계 세션이 없거나(비교할 사실이 없다) 기준선이 미활성이면 목표가 없다.
+ * 지난주에 통계 세션이 없거나(비교할 사실이 없다) 기준선이 미활성이면 목표가 없다. 4순위 후보가 없어도(기준선 값이 모두 0) 없다.
  */
 internal fun weeklyGoalFor(thisWeekStartAt: Long, lastWeek: WeekStats?, baseline: Baseline): WeeklyGoal? {
     val goal = GoalSuggester.suggest(lastWeek ?: return null, baseline) ?: return null
