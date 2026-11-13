@@ -74,6 +74,14 @@ class TemplateReportGeneratorTest {
     }
 
     @Test
+    fun `초만 길어 같은 숫자로 보이면 갱신이라고 쓰지 않는다`() = runTest {
+        // 47분 40초와 47분 10초는 둘 다 `47분`으로 보인다
+        assertEquals(listOf(TOTALS), generator.generate(input(longestSec = 47 * 60 + 40, previousBestLfsSec = 47 * 60 + 10)))
+        // 1분 미만은 초까지 보여 1초만 길어도 갱신이다
+        assertEquals(ReportSentence.NewRecord(41), generator.generate(input(longestSec = 41, previousBestLfsSec = 40)).last())
+    }
+
+    @Test
     fun `이탈이 가장 많은 앱을 고르고 횟수가 같으면 시간이 긴 앱이다`() = runTest {
         val sentences = generator.generate(
             input(interruptionCount = 10, distractApps = listOf(DistractApp("메신저", 4, 100), DistractApp("영상", 4, 900))),

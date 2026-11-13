@@ -9,6 +9,7 @@ import com.jaeyun.tally.domain.model.Category
 import com.jaeyun.tally.domain.model.PseudoPackage
 import com.jaeyun.tally.ui.components.report.TimelineKind
 import com.jaeyun.tally.ui.components.report.TimelineSegment
+import com.jaeyun.tally.util.durationParts
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -56,7 +57,7 @@ data class StructureSummary(
 
 /** 다른 세션과 견준 최장 구간 기록 */
 sealed interface RecordMark {
-    /** 다른 어떤 세션보다 길다 */
+    /** 화면에 보이는 자릿수로 다른 어떤 세션보다 길다 */
     data object NewRecord : RecordMark
 
     /** 기록은 다른 세션에 있다 */
@@ -111,7 +112,8 @@ internal const val MAX_UNCLASSIFIED_PROMPTS = 2
  * 저장된 세션·구간·분류로 리포트를 만든다.
  *
  * - 격차: 체감을 적었고 타임라인이 있고 `G`가 정의될 때(순공이 0이 아닐 때)만
- * - 기록: 통계에 셀 세션만 견준다. 다른 세션이 없으면(첫 세션) 기록 줄을 두지 않는다
+ * - 기록: 통계에 셀 세션만 견준다. 다른 세션이 없으면(첫 세션) 기록 줄을 두지 않는다. 화면에 보이는 자릿수로 견줘
+ *   같아 보이면 갱신이 아니라 `기록 47분`이다
  * - 숫자가 0으로 떨어지는 줄(비율 0%, 밀도 0%, 기록 0초)은 0을 쓰지 않고 감춘다(§8.5.1)
  * - 미분류 앱: 이번 세션에 딴짓으로 잡혔고 사용자가 아직 정하지 않은(자동 분류) 앱을 딴짓 시간이 긴 순서로 2개까지.
  *   나머지는 다음 세션으로 넘어가고 그동안 자동 분류를 그대로 쓴다(§5.1)
@@ -131,7 +133,8 @@ internal fun buildSessionReport(data: SessionReportData, zone: ZoneId): SessionR
     val bestOther = data.bestOtherLfsSec?.takeIf { it > 0 }
     val record = when {
         !session.countsInStats || bestOther == null -> null
-        session.lfsSec > bestOther -> RecordMark.NewRecord
+        // 화면에 보이는 자릿수로 견준다. 초만 길어 같은 숫자로 보이면 갱신이 아니라 기록과 같다(#73)
+        session.lfsSec > bestOther && durationParts(session.lfsSec.toLong()) != durationParts(bestOther.toLong()) -> RecordMark.NewRecord
         else -> RecordMark.Best(bestOther)
     }
     val structure = if (timeline) {

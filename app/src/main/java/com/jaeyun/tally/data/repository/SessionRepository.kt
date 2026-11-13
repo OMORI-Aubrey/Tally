@@ -105,17 +105,19 @@ class SessionRepository(
      *
      * 사용 기록 권한이 없으면 착석만 저장한다(`hasTimeline = false`). 조회와 분류는 오래 걸릴 수 있어 트랜잭션 밖에서 하고,
      * 저장 직전에 아직 진행 중인지 다시 확인한다. 이미 끝났거나 없는 세션이면 아무것도 바꾸지 않고 null(종료 버튼 연타 등).
+     * 기기 시계가 시작 시각보다 앞으로 돌아갔으면 0초 세션으로 끝낸다([sessionEndAt]).
      */
     suspend fun finish(sessionId: Long, now: Long): StudySession? {
         val session = dao.getById(sessionId)?.takeIf { it.endAt == null } ?: return null
+        val endAt = sessionEndAt(session.startAt, now)
 
         val timeline = withContext(ioDispatcher) {
-            when (val result = usageEvents.query(session.startAt, now)) {
+            when (val result = usageEvents.query(session.startAt, endAt)) {
                 UsageQueryResult.NoPermission -> null
-                is UsageQueryResult.Events -> reconstruct(result.events, session.startAt, now, classificationsFor(result.events))
+                is UsageQueryResult.Events -> reconstruct(result.events, session.startAt, endAt, classificationsFor(result.events))
             }
         }
-        val completed = completeSession(session, now, timeline, strictInvariant) { Log.w(TAG, it) }
+        val completed = completeSession(session, endAt, timeline, strictInvariant) { Log.w(TAG, it) }
 
         return database.withTransaction {
             val current = dao.getById(sessionId)

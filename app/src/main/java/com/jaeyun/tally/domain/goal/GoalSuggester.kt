@@ -14,7 +14,8 @@ import com.jaeyun.tally.domain.model.WeekStats
  * 2. 평균 `LFS` < 기준선 × [LFS_PCT]% → `LFS`, 기준선 복귀
  * 3. 주간 순공 총량 < 기준선 주평균 × [FOCUS_PCT]% → 주간 순공 총량, 기준선 복귀
  * 4. 모두 정상 → 좋아지는 방향으로 맞춘 편차가 가장 작은(가장 덜 좋아진) 지표, 좋아지는 방향으로 [STRETCH_PCT]%
- *    (`LFS`·순공은 기준선 × 105%, 이탈은 × 95%). 편차가 같으면 이탈 → `LFS` → 순공 순서 (PLAN.md §4)
+ *    (`LFS`·순공은 기준선 × 105%, 이탈은 × 95%). 편차가 같으면 이탈 → `LFS` → 순공 순서 (PLAN.md §4).
+ *    기준선 값이 0인 지표는 목표값이 0이 되므로(`0회 → 0회`) 후보에서 뺀다. 후보가 없으면 목표가 없다(#72)
  *
  * 세션 길이 가드: 평균 세션 길이가 기준선의 ±[SESSION_LENGTH_TOLERANCE_PCT]% 밖이면 `LFS`를 그 주의 목표 대상에서
  * 뺀다(2순위와 4순위 모두). `LFS`는 세션 길이가 상한이라 세션 운영이 바뀐 주의 `LFS` 변화는 집중력 변화가 아니다.
@@ -29,7 +30,10 @@ object GoalSuggester {
     const val STRETCH_PCT = 5
     const val SESSION_LENGTH_TOLERANCE_PCT = 20
 
-    /** 기준선이 미활성이면 목표가 없다(null). 화면은 "기준선 계산에 세션 N개가 더 필요합니다"를 쓴다 */
+    /**
+     * 기준선이 미활성이면 목표가 없다(null). 화면은 "기준선 계산에 세션 N개가 더 필요합니다"를 쓴다.
+     * 모두 정상인 주에 4순위 후보가 없어도(기준선 값이 모두 0) 목표가 없다
+     */
     fun suggest(week: WeekStats, baseline: Baseline): Goal? {
         if (baseline !is Baseline.Active) return null
         val lfsAllowed = isSessionLengthComparable(week.sessionSec, baseline.sessionSec)
@@ -47,14 +51,27 @@ object GoalSuggester {
             return focusGoal(week, baseline, stretch = false)
         }
 
+        // 기준선 값이 0인 지표는 목표값이 0이 되어 뺀다(#72)
         val candidates = listOfNotNull(
-            GoalMetric.INTERRUPTION to improvementPct(
-                week.interruptionsPerSession, baseline.interruptionsPerSession, lowerIsBetter = true,
-            ),
-            if (lfsAllowed) GoalMetric.LFS to improvementPct(week.lfsSec.toFloat(), baseline.lfsSec.toFloat()) else null,
-            GoalMetric.FOCUS_TOTAL to improvementPct(week.focusSec.toFloat(), baseline.weeklyFocusSec.toFloat()),
+            if (baseline.interruptionsPerSession > 0f) {
+                GoalMetric.INTERRUPTION to improvementPct(
+                    week.interruptionsPerSession, baseline.interruptionsPerSession, lowerIsBetter = true,
+                )
+            } else {
+                null
+            },
+            if (lfsAllowed && baseline.lfsSec > 0) {
+                GoalMetric.LFS to improvementPct(week.lfsSec.toFloat(), baseline.lfsSec.toFloat())
+            } else {
+                null
+            },
+            if (baseline.weeklyFocusSec > 0) {
+                GoalMetric.FOCUS_TOTAL to improvementPct(week.focusSec.toFloat(), baseline.weeklyFocusSec.toFloat())
+            } else {
+                null
+            },
         )
-        return when (candidates.minBy { it.second }.first) {
+        return when (candidates.minByOrNull { it.second }?.first ?: return null) {
             GoalMetric.INTERRUPTION -> interruptionGoal(week, baseline, stretch = true)
             GoalMetric.LFS -> lfsGoal(week, baseline, stretch = true)
             GoalMetric.FOCUS_TOTAL -> focusGoal(week, baseline, stretch = true)
