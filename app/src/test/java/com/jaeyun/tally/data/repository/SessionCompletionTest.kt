@@ -5,8 +5,11 @@ import com.jaeyun.tally.domain.metrics.MetricsVersion
 import com.jaeyun.tally.domain.model.Category.ALLOWED
 import com.jaeyun.tally.domain.model.Category.AWAY
 import com.jaeyun.tally.domain.model.Category.DISTRACT
+import com.jaeyun.tally.domain.model.RawEvent
+import com.jaeyun.tally.domain.model.RawEventType
 import com.jaeyun.tally.domain.model.Segment
 import com.jaeyun.tally.domain.reconstructor.ReconstructedTimeline
+import com.jaeyun.tally.domain.reconstructor.TimelineReconstructor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -126,5 +129,35 @@ class SessionCompletionTest {
         assertTrue(messages.single().contains("빈틈"))
         assertFalse(done.session.isValidForStats)
         assertTrue(done.session.hasTimeline)
+    }
+
+    @Test
+    fun `종료 시각은 지금이고 시계가 시작보다 앞으로 돌아갔으면 시작 시각이다`() {
+        assertEquals(40 * MIN, sessionEndAt(startAt = 30 * MIN, now = 40 * MIN))
+        assertEquals(30 * MIN, sessionEndAt(startAt = 30 * MIN, now = 30 * MIN))
+        assertEquals(30 * MIN, sessionEndAt(startAt = 30 * MIN, now = 20 * MIN))
+    }
+
+    @Test
+    fun `시계가 시작보다 앞으로 돌아간 세션은 0초 세션으로 끝나고 통계에서 빠진다`() {
+        val started = StudySession(id = 8, subjectName = null, startAt = 30 * MIN, createdAt = 30 * MIN)
+        val endAt = sessionEndAt(started.startAt, now = 20 * MIN)
+        // 시계를 되돌리기 전에 기록된 이벤트는 세션 끝보다 뒤라 쓰지 않는다
+        val timeline = TimelineReconstructor.reconstruct(
+            events = listOf(RawEvent(35 * MIN, RawEventType.ACTIVITY_RESUMED, "yt")),
+            sessionStart = started.startAt,
+            sessionEnd = endAt,
+            selfPackage = "self",
+            classify = { if (it == "self") ALLOWED else DISTRACT },
+        )
+
+        val done = completeSession(started, endAt, timeline, strictInvariant = true) {}
+
+        assertEquals(30 * MIN, done.session.endAt)
+        assertEquals(0, done.session.tTotalSec)
+        assertEquals(0, done.session.interruptionCount)
+        assertTrue(done.session.hasTimeline)
+        assertFalse(done.session.isValidForStats)
+        assertEquals(listOf(Segment("self", ALLOWED, 30 * MIN, 30 * MIN)), done.segments.map { it.toSegment() })
     }
 }

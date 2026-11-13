@@ -24,6 +24,13 @@ internal data class CompletedSession(val session: StudySession, val segments: Li
 internal fun AppSegment.toSegment(): Segment = Segment(packageName, category, startAt, endAt)
 
 /**
+ * 세션을 끝낼 시각. 세션 중 기기 시계가 시작 시각보다 앞으로 돌아갔으면(수동 변경, 네트워크 시간 보정 등) 시작 시각으로 맞춰
+ * 길이 0초 세션으로 끝낸다(#71). 시작 시각만 저장하므로 실제로 공부한 길이는 알 수 없다. 3분 미만이라 통계에서 빠지고
+ * 기록은 세션 목록에 남는다.
+ */
+internal fun sessionEndAt(startAt: Long, now: Long): Long = maxOf(now, startAt)
+
+/**
  * 세션 종료 시 저장할 값을 만든다 (§9). DB·사용 기록 조회는 [SessionRepository]가 하고, 여기서는 계산만 한다.
  *
  * - [timeline]이 null(사용 기록 권한 없음)이면 타임라인 없이 착석만 저장한다(`hasTimeline = false`, §6.3 #1).

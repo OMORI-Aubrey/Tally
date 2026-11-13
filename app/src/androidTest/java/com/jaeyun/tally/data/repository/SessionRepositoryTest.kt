@@ -250,6 +250,18 @@ class SessionRepositoryTest {
         assertEquals(10 * MIN, db.studySessionDao().getById(id)?.endAt)
     }
 
+    @Test
+    fun 시계가_시작보다_앞으로_돌아갔으면_0초_세션으로_끝낸다() = runTest {
+        val id = repository.start(subjectName = null, now = 30 * MIN)
+
+        val finished = repository.finish(id, now = 20 * MIN)!!
+
+        assertEquals(30 * MIN, finished.endAt)
+        assertEquals(0, finished.tTotalSec)
+        assertFalse(finished.isValidForStats)
+        assertEquals(finished, db.studySessionDao().getById(id))
+    }
+
     private fun screenOff(at: Long) = RawEvent(at, RawEventType.SCREEN_NON_INTERACTIVE, null)
 
     @Test
