@@ -9,7 +9,7 @@ import com.jaeyun.tally.domain.model.WeeklyReportInput
  *
  * 1. 총량: 세션 수, 공부, 순공 — 늘 쓴다
  * 2. 앞 주 대비 순공 증감 — 앞 주에 통계 세션이 있을 때. 화면에 보이는 자릿수로 견준다(같아 보이면 같았다)
- * 3. 최장 구간 기록 갱신 — 앞선 기록이 있고 그 주 최댓값이 더 길 때(첫 주는 모든 것이 기록이라 쓰지 않는다)
+ * 3. 최장 구간 기록 갱신 — 앞선 기록이 있고 그 주 최댓값이 화면에 보이는 자릿수로 더 길 때(첫 주는 모든 것이 기록이라 쓰지 않는다)
  * 4. 이탈이 가장 많았던 딴짓 앱 — 이탈이 있을 때. 횟수가 많은 앱, 같으면 시간이 긴 앱. "주로"라고 단정하지 않고 몇 회 중 몇 회인지 쓴다
  *
  * 판정 문구와 달리 좋다·나쁘다를 말하지 않는다. 늘었으면 늘었다고, 갱신했으면 갱신했다고만 쓴다.
@@ -19,7 +19,10 @@ class TemplateReportGenerator : ReportGenerator {
     override suspend fun generate(input: WeeklyReportInput): List<ReportSentence> = buildList {
         add(ReportSentence.Totals(input.sessionCount, input.sittingSec, input.focusSec))
         input.previousFocusSec?.let { previous -> add(ReportSentence.FocusChange(shownSeconds(input.focusSec) - shownSeconds(previous))) }
-        input.previousBestLfsSec?.let { best -> if (input.longestSec > best) add(ReportSentence.NewRecord(input.longestSec)) }
+        input.previousBestLfsSec?.let { best ->
+            // 초만 길어 같은 숫자로 보이면 갱신이라고 쓰지 않는다(#73)
+            if (shownSeconds(input.longestSec) > shownSeconds(best)) add(ReportSentence.NewRecord(input.longestSec))
+        }
         mainDistraction(input)?.let(::add)
     }
 

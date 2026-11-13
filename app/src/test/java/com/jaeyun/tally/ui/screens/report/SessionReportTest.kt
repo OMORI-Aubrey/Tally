@@ -108,6 +108,16 @@ class SessionReportTest {
     }
 
     @Test
+    fun `초만 길어 같은 숫자로 보이면 기록 갱신이 아니라 기록과 같다`() {
+        // 47분 40초와 47분 10초는 둘 다 `47분`으로 보인다
+        val sameMinute = session(lfsMin = 47).copy(lfsSec = 47 * 60 + 40)
+        assertEquals(RecordMark.Best(47 * 60 + 10), report(sameMinute, bestOther = 47 * 60 + 10).structure!!.record)
+        // 1분 미만은 초까지 보여 1초만 길어도 갱신이다
+        val underMinute = session(lfsMin = 0).copy(lfsSec = 41)
+        assertEquals(RecordMark.NewRecord, report(underMinute, bestOther = 40).structure!!.record)
+    }
+
+    @Test
     fun `첫 세션이거나 통계 제외 세션이면 기록 줄을 두지 않는다`() {
         assertNull(report(session(), bestOther = null).structure!!.record)
         assertNull(report(session(valid = false, lfsMin = 2), bestOther = 47 * 60).structure!!.record)
